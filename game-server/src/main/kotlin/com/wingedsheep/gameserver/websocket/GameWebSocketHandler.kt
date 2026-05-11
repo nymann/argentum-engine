@@ -7,6 +7,7 @@ import com.wingedsheep.gameserver.handler.MessageSender
 import com.wingedsheep.gameserver.handler.QuickGameLobbyHandler
 import com.wingedsheep.gameserver.protocol.ClientMessage
 import com.wingedsheep.gameserver.protocol.ErrorCode
+import com.wingedsheep.sdk.model.EntityId
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component

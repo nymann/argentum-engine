@@ -105,7 +105,14 @@ enum class Keyword(val displayName: String) {
      * Ability word — pure flavor prefix; no uniform mechanic is attached.
      * Resolution delegates entirely to the underlying ability unchanged.
      */
-    SHARE("Share");
+    SHARE("Share"),
+
+    /**
+     * Nosh (Bloomburrow).
+     * Ability word — pure flavor prefix; no uniform mechanic is attached.
+     * Resolution delegates entirely to the underlying ability unchanged.
+     */
+    NOSH("Nosh");
 
     companion object {
         fun fromString(value: String): Keyword? =
