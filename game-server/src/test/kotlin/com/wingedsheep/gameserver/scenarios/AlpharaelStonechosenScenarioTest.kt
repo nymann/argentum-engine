@@ -153,6 +153,34 @@ class AlpharaelStonechosenScenarioTest : ScenarioTestBase() {
 
         context("Alpharael, Stonechosen — Void attack trigger") {
 
+            test("Void trigger fires when a spell was warped this turn: defending player at 10 life loses 5") {
+                val game = scenario()
+                    .withPlayers("ActivePlayer", "Opponent")
+                    .withCardOnBattlefield(1, "Alpharael, Stonechosen")
+                    .withCardInHand(1, "Weftstalker Ardent") // Warp {R}
+                    .withLandsOnBattlefield(1, "Mountain", 1)
+                    .withLifeTotal(2, 10)
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                // Cast Weftstalker Ardent for its warp cost to satisfy the Void condition
+                // No nonland permanent leaves the battlefield — only the warp satisfies Void here
+                val castResult = game.castSpellWithAlternativeCost(1, "Weftstalker Ardent")
+                withClue("Weftstalker Ardent should cast for warp cost: ${castResult.error}") {
+                    castResult.error shouldBe null
+                }
+                game.resolveStack()
+
+                game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
+                game.declareAttackers(mapOf("Alpharael, Stonechosen" to 2))
+                game.resolveStack()
+
+                withClue("Defending player should be at 5 life (lost 5 = half of 10, rounded up)") {
+                    game.getLifeTotal(2) shouldBe 5
+                }
+            }
+
             test("defending player at 7 life loses 4 (half of 7 rounded up) when Alpharael attacks and Void is met") {
                 val game = scenario()
                     .withPlayers("ActivePlayer", "Opponent")
