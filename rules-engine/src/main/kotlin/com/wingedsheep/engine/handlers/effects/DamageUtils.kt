@@ -47,6 +47,7 @@ import com.wingedsheep.sdk.scripting.events.DamageType
 import com.wingedsheep.sdk.scripting.events.RecipientFilter
 import com.wingedsheep.sdk.scripting.events.SourceFilter
 import com.wingedsheep.sdk.scripting.references.Player
+import com.wingedsheep.engine.handlers.effects.replacement.PreventDamageDealtToSelfAndPutThatMany11CountersOnItHandler
 
 /**
  * Utility functions for dealing damage, applying damage prevention/amplification/redirection,
@@ -147,6 +148,10 @@ object DamageUtils {
                 val deflectResult = checkDeflectDamageShield(newState, targetId, effectiveAmount, sourceId)
                 if (deflectResult != null) return deflectResult
             }
+
+            // Check for "prevent damage to self and put that many +1/+1 counters on it" replacement
+            val selfProtectResult = PreventDamageDealtToSelfAndPutThatMany11CountersOnItHandler.apply(newState, targetId, effectiveAmount)
+            if (selfProtectResult != null) return selfProtectResult
 
             val (shieldState, reducedAmount) = applyDamagePreventionShields(newState, targetId, effectiveAmount, sourceId = sourceId)
             newState = shieldState

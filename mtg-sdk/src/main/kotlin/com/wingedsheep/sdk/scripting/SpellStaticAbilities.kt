@@ -210,3 +210,21 @@ data class MayCastFromGraveyardWithLifeCost(
         return if (newFilter !== filter) copy(filter = newFilter) else this
     }
 }
+
+/**
+ * This spell may be cast from its owner's graveyard by discarding [discardCount] card(s) as an
+ * additional cost alongside the spell's printed mana cost. Unlike Flashback, the spell is NOT
+ * exiled after resolution — it goes to the graveyard per normal rules.
+ *
+ * The permission is intrinsic: the card itself carries this static ability.
+ */
+@SerialName("MayCastFromGraveyardWithAdditionalDiscardCost")
+@Serializable
+data class MayCastFromGraveyardWithAdditionalDiscardCost(
+    val discardCount: Int = 1
+) : StaticAbility {
+    override val description: String =
+        "You may cast this spell from your graveyard by discarding " +
+            "${if (discardCount == 1) "a card" else "$discardCount cards"} as an additional cost"
+    override fun applyTextReplacement(replacer: TextReplacer): StaticAbility = this
+}

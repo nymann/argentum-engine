@@ -82,6 +82,7 @@ import com.wingedsheep.sdk.scripting.PlayFromTopOfLibrary
 import com.wingedsheep.sdk.scripting.predicates.CardPredicate
 import com.wingedsheep.sdk.core.Keyword
 
+import com.wingedsheep.engine.handlers.cast.CastFromGraveyardWithAdditionalDiscardCostHandler
 import com.wingedsheep.engine.handlers.effects.TargetResolutionUtils.toEntityId
 import com.wingedsheep.engine.state.components.player.GrantedSpellKeywordsComponent
 import com.wingedsheep.engine.state.components.stack.ChosenTarget
@@ -121,6 +122,7 @@ class CastSpellHandler(
     private val zoneResolver = CastZoneResolver(cardRegistry, conditionEvaluator)
     private val paymentProcessor = CastPaymentProcessor(manaSolver, costHandler, manaAbilitySideEffectExecutor)
     private val grantedKeywordResolver = com.wingedsheep.engine.mechanics.mana.GrantedKeywordResolver(cardRegistry)
+    private val graveyardDiscardCostHandler = CastFromGraveyardWithAdditionalDiscardCostHandler(cardRegistry)
 
     override fun validate(state: GameState, action: CastSpell): String? {
         if (state.priorityPlayerId != action.playerId) {
@@ -149,13 +151,23 @@ class CastSpellHandler(
             zoneResolver.hasMayCastCreaturesFromGraveyardWithForage(state, action.playerId, action.cardId, cardComponent)
         val hasCommanderCast = !inHand && !onTopOfLibrary && !mayPlayFromExile && !mayCastFromZone && !mayCastFromGraveyard && !hasFlashback && !hasGraveyardLifeCost && !hasForageFromGraveyard &&
             zoneResolver.hasCommanderCastPermission(state, action.playerId, action.cardId)
-        if (!inHand && !onTopOfLibrary && !mayPlayFromExile && !mayCastFromZone && !mayCastFromGraveyard && !hasFlashback && !hasGraveyardLifeCost && !hasForageFromGraveyard && !hasCommanderCast) {
+        val hasGraveyardDiscardPermission = !inHand && !onTopOfLibrary && !mayPlayFromExile && !mayCastFromZone && !mayCastFromGraveyard && !hasFlashback && !hasGraveyardLifeCost && !hasForageFromGraveyard && !hasCommanderCast &&
+            graveyardDiscardCostHandler.hasPermission(state, action.playerId, action.cardId)
+        if (!inHand && !onTopOfLibrary && !mayPlayFromExile && !mayCastFromZone && !mayCastFromGraveyard && !hasFlashback && !hasGraveyardLifeCost && !hasForageFromGraveyard && !hasCommanderCast && !hasGraveyardDiscardPermission) {
             return "Card is not in your hand"
         }
 
         if (hasForageFromGraveyard) {
             if (!costHandler.canPayAdditionalCost(state, AdditionalCost.Forage, action.playerId)) {
                 return "Cannot forage: need 3 other cards in graveyard or a Food"
+            }
+        }
+
+        if (hasGraveyardDiscardPermission) {
+            val discardCost = graveyardDiscardCostHandler.getImpliedDiscardCost(state, action.cardId)
+            if (discardCost != null) {
+                val discardError = validateAdditionalCosts(state, listOf(discardCost), action)
+                if (discardError != null) return discardError
             }
         }
 
@@ -1284,6 +1296,12 @@ class CastSpellHandler(
             // "remove three counters from among creatures you control")
             val linkedGranter = zoneResolver.findLinkedExileGranter(currentState, action.playerId, action.cardId)
             linkedGranter?.additionalCost?.let { add(it) }
+
+            // Graveyard-with-discard permission: implied discard cost derived from the permission tag
+            val graveyardDiscardCost = graveyardDiscardCostHandler.getImpliedDiscardCost(currentState, action.cardId)
+            if (graveyardDiscardCost != null && graveyardDiscardCostHandler.hasPermission(currentState, action.playerId, action.cardId)) {
+                add(graveyardDiscardCost)
+            }
         }
 
         val flattenedAllCosts = allAdditionalCosts.flatMap {
