@@ -98,7 +98,14 @@ enum class Keyword(val displayName: String) {
      * out its own effect. Wired via the `vivid…` DSL helpers on [CardBuilder]
      * or by adding the appropriate effect/static ability directly.
      */
-    VIVID("Vivid");
+    VIVID("Vivid"),
+
+    /**
+     * Share (Marvel's Spider-Man).
+     * Ability word — pure flavor prefix; no uniform mechanic is attached.
+     * Resolution delegates entirely to the underlying ability unchanged.
+     */
+    SHARE("Share");
 
     companion object {
         fun fromString(value: String): Keyword? =
