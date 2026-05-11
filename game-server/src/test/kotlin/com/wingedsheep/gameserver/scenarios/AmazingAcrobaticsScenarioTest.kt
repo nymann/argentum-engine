@@ -1,6 +1,7 @@
 package com.wingedsheep.gameserver.scenarios
 
 import com.wingedsheep.engine.core.CastSpell
+import com.wingedsheep.engine.state.components.battlefield.TappedComponent
 import com.wingedsheep.engine.state.components.identity.CardComponent
 import com.wingedsheep.engine.state.components.stack.ChosenTarget
 import com.wingedsheep.gameserver.ScenarioTestBase
@@ -71,6 +72,98 @@ class AmazingAcrobaticsScenarioTest : ScenarioTestBase() {
                 }
                 withClue("Amazing Acrobatics should be in its owner's graveyard after resolution") {
                     game.isInGraveyard(1, "Amazing Acrobatics") shouldBe true
+                }
+            }
+        }
+
+        context("Amazing Acrobatics — tap mode only") {
+
+            test("taps both targeted creatures when two targets are chosen") {
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withActivePlayer(1)
+                    .withCardInHand(1, "Amazing Acrobatics")
+                    .withLandsOnBattlefield(1, "Island", 3)
+                    .withCardOnBattlefield(2, "Grizzly Bears")
+                    .withCardOnBattlefield(2, "Glory Seeker")
+                    .withCardInLibrary(1, "Island")
+                    .withCardInLibrary(2, "Island")
+                    .inPhase(com.wingedsheep.sdk.core.Phase.PRECOMBAT_MAIN, com.wingedsheep.sdk.core.Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val bearsId = game.findPermanent("Grizzly Bears")!!
+                val seekerId = game.findPermanent("Glory Seeker")!!
+                val acrobaticsId = game.state.getHand(game.player1Id).find { entityId ->
+                    game.state.getEntity(entityId)?.get<CardComponent>()?.name == "Amazing Acrobatics"
+                }!!
+
+                // Cast Amazing Acrobatics choosing only the 'Tap up to two target creatures' mode (mode index 1)
+                val result = game.execute(
+                    CastSpell(
+                        playerId = game.player1Id,
+                        cardId = acrobaticsId,
+                        targets = listOf(ChosenTarget.Permanent(bearsId), ChosenTarget.Permanent(seekerId)),
+                        chosenModes = listOf(1),
+                        modeTargetsOrdered = listOf(listOf(ChosenTarget.Permanent(bearsId), ChosenTarget.Permanent(seekerId)))
+                    )
+                )
+                withClue("Casting Amazing Acrobatics (tap mode) should succeed: ${result.error}") {
+                    result.isSuccess shouldBe true
+                }
+
+                game.resolveStack()
+
+                withClue("Amazing Acrobatics should be in its owner's graveyard after resolution") {
+                    game.isInGraveyard(1, "Amazing Acrobatics") shouldBe true
+                }
+                withClue("Grizzly Bears should be tapped") {
+                    game.state.getEntity(bearsId)?.get<TappedComponent>() shouldBe TappedComponent
+                }
+                withClue("Glory Seeker should be tapped") {
+                    game.state.getEntity(seekerId)?.get<TappedComponent>() shouldBe TappedComponent
+                }
+            }
+
+            test("taps exactly one creature when only one target is chosen") {
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withActivePlayer(1)
+                    .withCardInHand(1, "Amazing Acrobatics")
+                    .withLandsOnBattlefield(1, "Island", 3)
+                    .withCardOnBattlefield(2, "Grizzly Bears")
+                    .withCardOnBattlefield(2, "Glory Seeker")
+                    .withCardInLibrary(1, "Island")
+                    .withCardInLibrary(2, "Island")
+                    .inPhase(com.wingedsheep.sdk.core.Phase.PRECOMBAT_MAIN, com.wingedsheep.sdk.core.Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val bearsId = game.findPermanent("Grizzly Bears")!!
+                val seekerId = game.findPermanent("Glory Seeker")!!
+                val acrobaticsId = game.state.getHand(game.player1Id).find { entityId ->
+                    game.state.getEntity(entityId)?.get<CardComponent>()?.name == "Amazing Acrobatics"
+                }!!
+
+                // Cast Amazing Acrobatics targeting only Grizzly Bears (one target)
+                val result = game.execute(
+                    CastSpell(
+                        playerId = game.player1Id,
+                        cardId = acrobaticsId,
+                        targets = listOf(ChosenTarget.Permanent(bearsId)),
+                        chosenModes = listOf(1),
+                        modeTargetsOrdered = listOf(listOf(ChosenTarget.Permanent(bearsId)))
+                    )
+                )
+                withClue("Casting Amazing Acrobatics with one target should succeed: ${result.error}") {
+                    result.isSuccess shouldBe true
+                }
+
+                game.resolveStack()
+
+                withClue("Grizzly Bears should be tapped") {
+                    game.state.getEntity(bearsId)?.get<TappedComponent>() shouldBe TappedComponent
+                }
+                withClue("Glory Seeker should remain untapped") {
+                    game.state.getEntity(seekerId)?.get<TappedComponent>() shouldBe null
                 }
             }
         }
