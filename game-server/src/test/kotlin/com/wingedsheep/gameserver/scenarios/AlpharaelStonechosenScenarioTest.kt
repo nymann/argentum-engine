@@ -153,6 +153,27 @@ class AlpharaelStonechosenScenarioTest : ScenarioTestBase() {
 
         context("Alpharael, Stonechosen — Void attack trigger") {
 
+            test("Void does not trigger when neither condition is met — defending player's life is unchanged") {
+                val game = scenario()
+                    .withPlayers("ActivePlayer", "Opponent")
+                    .withCardOnBattlefield(1, "Alpharael, Stonechosen")
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                // Neither Void condition is present: no nonland permanent left the battlefield,
+                // no spell was warped this turn
+                val opponentLifeBefore = game.getLifeTotal(2)
+
+                game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
+                game.declareAttackers(mapOf("Alpharael, Stonechosen" to 2))
+                game.resolveStack()
+
+                withClue("Void should not trigger — defending player's life should be unchanged") {
+                    game.getLifeTotal(2) shouldBe opponentLifeBefore
+                }
+            }
+
             test("Void trigger fires when a spell was warped this turn: defending player at 10 life loses 5") {
                 val game = scenario()
                     .withPlayers("ActivePlayer", "Opponent")
