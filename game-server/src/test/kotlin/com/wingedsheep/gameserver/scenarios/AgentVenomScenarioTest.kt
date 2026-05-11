@@ -1,5 +1,7 @@
 package com.wingedsheep.gameserver.scenarios
 
+import com.wingedsheep.engine.state.components.identity.CardComponent
+import com.wingedsheep.engine.state.components.identity.TokenComponent
 import com.wingedsheep.gameserver.ScenarioTestBase
 import com.wingedsheep.sdk.core.Keyword
 import com.wingedsheep.sdk.core.Phase
@@ -88,6 +90,37 @@ class AgentVenomScenarioTest : ScenarioTestBase() {
                 game.isOnBattlefield("Grizzly Bears") shouldBe false
                 game.getLifeTotal(1) shouldBe 19
                 game.handSize(1) shouldBe 1
+            }
+        }
+
+        context("Agent Venom — triggered ability does NOT fire on token creature death") {
+            test("token creature death does not trigger draw or life loss") {
+                // Player 1 controls Agent Venom and a creature token (Grizzly Bears with TokenComponent).
+                // Opponent kills the token. Agent Venom's trigger should NOT fire — tokens are excluded.
+                val game = scenario()
+                    .withPlayers("Player", "Opponent")
+                    .withCardOnBattlefield(1, "Agent Venom")
+                    .withCardOnBattlefield(1, "Grizzly Bears")
+                    .withCardInHand(2, "Shock")
+                    .withLandsOnBattlefield(2, "Mountain", 1)
+                    .withCardInLibrary(1, "Forest")
+                    .withCardInLibrary(2, "Forest")
+                    .withActivePlayer(1)
+                    .withPriorityPlayer(2)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                // Mark Grizzly Bears as a token so Agent Venom's nontoken filter excludes it
+                val grizzlyBearsId = game.findPermanent("Grizzly Bears")!!
+                val tokenContainer = game.state.getEntity(grizzlyBearsId)!!.with(TokenComponent)
+                game.state = game.state.withEntity(grizzlyBearsId, tokenContainer)
+
+                game.castSpell(2, "Shock", grizzlyBearsId)
+                game.resolveStack()
+
+                game.isOnBattlefield("Grizzly Bears") shouldBe false
+                game.getLifeTotal(1) shouldBe 20
+                game.handSize(1) shouldBe 0
             }
         }
     }
