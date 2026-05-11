@@ -1,5 +1,7 @@
 package com.wingedsheep.gameserver.scenarios
 
+import com.wingedsheep.engine.core.ActivateAbility
+import com.wingedsheep.engine.state.components.stack.ChosenTarget
 import com.wingedsheep.gameserver.ScenarioTestBase
 import com.wingedsheep.sdk.core.Keyword
 import com.wingedsheep.sdk.core.Phase
@@ -104,6 +106,47 @@ class AlpharaelStonechosenScenarioTest : ScenarioTestBase() {
                 // Bring Low resolved after ward was paid → Alpharael (3/3) took 3 damage and died
                 withClue("Alpharael should be in the graveyard (Bring Low resolved after ward paid)") {
                     game.isInGraveyard(1, "Alpharael, Stonechosen") shouldBe true
+                }
+            }
+        }
+
+        context("Alpharael, Stonechosen — Ward triggers from opponent's activated ability") {
+
+            test("ward — opponent discards a card at random when their activated ability targets Alpharael") {
+                val game = scenario()
+                    .withPlayers("PlayerA", "PlayerB")
+                    .withCardOnBattlefield(1, "Alpharael, Stonechosen")
+                    .withCardOnBattlefield(2, "Embermage Goblin") // {T}: deal 1 to any target
+                    .withCardInHand(2, "Devoted Hero") // ward payment fodder
+                    .withActivePlayer(2)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val alpharaelId = game.findPermanent("Alpharael, Stonechosen")!!
+                val embermageId = game.findPermanent("Embermage Goblin")!!
+
+                val tapAbility = cardRegistry.getCard("Embermage Goblin")!!
+                    .script.activatedAbilities[0]
+
+                // P2 activates Embermage Goblin's tap ability targeting Alpharael
+                // P2 has Devoted Hero in hand — should be discarded at random as ward payment
+                val activateResult = game.execute(
+                    ActivateAbility(
+                        playerId = game.player2Id,
+                        sourceId = embermageId,
+                        abilityId = tapAbility.id,
+                        targets = listOf(ChosenTarget.Permanent(alpharaelId))
+                    )
+                )
+                withClue("Ability activation should succeed: ${activateResult.error}") {
+                    activateResult.error shouldBe null
+                }
+
+                game.resolveStack()
+
+                // Ward triggered: P2 discarded Devoted Hero at random as payment
+                withClue("Player B should have discarded 1 card at random (ward payment for activated ability)") {
+                    game.handSize(2) shouldBe 0
                 }
             }
         }
