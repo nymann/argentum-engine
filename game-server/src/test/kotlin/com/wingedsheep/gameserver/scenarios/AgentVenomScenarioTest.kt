@@ -14,6 +14,7 @@ import io.kotest.matchers.shouldNotBe
  * Card reference:
  * - Agent Venom ({2}{B}): 2/3 Legendary Creature — Symbiote Soldier Hero
  *   Flash, Menace
+ *   When another nontoken creature you control dies, draw a card and lose 1 life.
  */
 class AgentVenomScenarioTest : ScenarioTestBase() {
 
@@ -58,6 +59,35 @@ class AgentVenomScenarioTest : ScenarioTestBase() {
 
                 card.keywords shouldContain Keyword.MENACE
                 card.keywords shouldContain Keyword.FLASH
+            }
+        }
+
+        context("Agent Venom — triggered ability on nontoken creature death") {
+            test("draws a card and loses 1 life when another nontoken creature dies") {
+                // Player 1 (active) controls Agent Venom and Grizzly Bears.
+                // Opponent uses Shock to destroy Grizzly Bears during player 1's main phase.
+                // Agent Venom's triggered ability should fire: draw 1, lose 1 life.
+                val game = scenario()
+                    .withPlayers("Player", "Opponent")
+                    .withCardOnBattlefield(1, "Agent Venom")
+                    .withCardOnBattlefield(1, "Grizzly Bears")
+                    .withCardInHand(2, "Shock")
+                    .withLandsOnBattlefield(2, "Mountain", 1)
+                    .withCardInLibrary(1, "Forest")
+                    .withCardInLibrary(2, "Forest")
+                    .withActivePlayer(1)
+                    .withPriorityPlayer(2)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val grizzlyBearsId = game.findPermanent("Grizzly Bears")!!
+
+                game.castSpell(2, "Shock", grizzlyBearsId)
+                game.resolveStack()
+
+                game.isOnBattlefield("Grizzly Bears") shouldBe false
+                game.getLifeTotal(1) shouldBe 19
+                game.handSize(1) shouldBe 1
             }
         }
     }

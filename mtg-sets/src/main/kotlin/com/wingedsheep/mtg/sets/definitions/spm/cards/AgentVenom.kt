@@ -1,8 +1,16 @@
 package com.wingedsheep.mtg.sets.definitions.spm.cards
 
 import com.wingedsheep.sdk.core.Keyword
+import com.wingedsheep.sdk.core.Zone
+import com.wingedsheep.sdk.dsl.Effects
 import com.wingedsheep.sdk.dsl.card
 import com.wingedsheep.sdk.model.Rarity
+import com.wingedsheep.sdk.scripting.GameEvent.ZoneChangeEvent
+import com.wingedsheep.sdk.scripting.GameObjectFilter
+import com.wingedsheep.sdk.scripting.TriggerBinding
+import com.wingedsheep.sdk.scripting.TriggerSpec
+import com.wingedsheep.sdk.scripting.predicates.CardPredicate
+import com.wingedsheep.sdk.scripting.targets.EffectTarget
 
 /**
  * Agent Venom
@@ -10,6 +18,7 @@ import com.wingedsheep.sdk.model.Rarity
  * Legendary Creature — Symbiote Soldier Hero
  * 2/3
  * Flash, Menace
+ * Whenever another nontoken creature you control dies, draw a card and lose 1 life.
  */
 val AgentVenom = card("Agent Venom") {
     manaCost = "{2}{B}"
@@ -17,9 +26,26 @@ val AgentVenom = card("Agent Venom") {
     typeLine = "Legendary Creature — Symbiote Soldier Hero"
     power = 2
     toughness = 3
-    oracleText = "Flash\nMenace"
+    oracleText = "Flash\nMenace\nWhenever another nontoken creature you control dies, draw a card and lose 1 life."
 
     keywords(Keyword.FLASH, Keyword.MENACE)
+
+    triggeredAbility {
+        trigger = TriggerSpec(
+            event = ZoneChangeEvent(
+                filter = GameObjectFilter.Creature.youControl().copy(
+                    cardPredicates = GameObjectFilter.Creature.cardPredicates + CardPredicate.IsNontoken
+                ),
+                from = Zone.BATTLEFIELD,
+                to = Zone.GRAVEYARD
+            ),
+            binding = TriggerBinding.OTHER
+        )
+        effect = Effects.Composite(
+            Effects.DrawCards(1),
+            Effects.LoseLife(1, EffectTarget.Controller)
+        )
+    }
 
     metadata {
         rarity = Rarity.UNCOMMON
