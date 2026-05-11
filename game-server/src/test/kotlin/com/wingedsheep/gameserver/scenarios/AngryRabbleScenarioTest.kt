@@ -1,13 +1,17 @@
 package com.wingedsheep.gameserver.scenarios
 
+import com.wingedsheep.engine.core.ActivateAbility
+import com.wingedsheep.engine.state.components.battlefield.CountersComponent
 import com.wingedsheep.engine.state.components.identity.CardComponent
 import com.wingedsheep.gameserver.ScenarioTestBase
+import com.wingedsheep.sdk.core.CounterType
 import com.wingedsheep.sdk.core.Keyword
 import com.wingedsheep.sdk.core.Phase
 import com.wingedsheep.sdk.core.Step
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 
 /**
  * Scenario tests for Angry Rabble.
@@ -21,6 +25,63 @@ import io.kotest.matchers.shouldBe
 class AngryRabbleScenarioTest : ScenarioTestBase() {
 
     init {
+        context("Angry Rabble activated ability — {5}{R} sorcery speed") {
+
+            test("puts two +1/+1 counters when activated at sorcery speed in main phase") {
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withCardOnBattlefield(1, "Angry Rabble")
+                    .withLandsOnBattlefield(1, "Mountain", 6)
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val permanentId = game.findPermanent("Angry Rabble")!!
+                val ability = cardRegistry.getCard("Angry Rabble")!!.script.activatedAbilities.first()
+
+                val activateResult = game.execute(
+                    ActivateAbility(
+                        playerId = game.player1Id,
+                        sourceId = permanentId,
+                        abilityId = ability.id
+                    )
+                )
+                withClue("Activating {5}{R} ability should succeed: ${activateResult.error}") {
+                    activateResult.error shouldBe null
+                }
+                game.resolveStack()
+
+                val counters = game.state.getEntity(permanentId)?.get<CountersComponent>()
+                withClue("Angry Rabble should have 2 +1/+1 counters (making it 4/4)") {
+                    counters!!.getCount(CounterType.PLUS_ONE_PLUS_ONE) shouldBe 2
+                }
+            }
+
+            test("activation is not a legal action outside the active player's main phase") {
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withCardOnBattlefield(1, "Angry Rabble")
+                    .withLandsOnBattlefield(1, "Mountain", 6)
+                    .withActivePlayer(1)
+                    .inPhase(Phase.BEGINNING, Step.UPKEEP)
+                    .build()
+
+                val permanentId = game.findPermanent("Angry Rabble")!!
+                val ability = cardRegistry.getCard("Angry Rabble")!!.script.activatedAbilities.first()
+
+                val activateResult = game.execute(
+                    ActivateAbility(
+                        playerId = game.player1Id,
+                        sourceId = permanentId,
+                        abilityId = ability.id
+                    )
+                )
+                withClue("Activating sorcery-speed ability during upkeep should be rejected") {
+                    activateResult.error shouldNotBe null
+                }
+            }
+        }
+
         context("Angry Rabble trigger — cast-spell with mana value 4+") {
 
             test("deals 1 damage to opponent when a spell with mana value 4 or greater is cast") {
