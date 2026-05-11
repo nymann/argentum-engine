@@ -153,6 +153,31 @@ class AlpharaelStonechosenScenarioTest : ScenarioTestBase() {
 
         context("Alpharael, Stonechosen — Void attack trigger") {
 
+            test("defending player at 7 life loses 4 (half of 7 rounded up) when Alpharael attacks and Void is met") {
+                val game = scenario()
+                    .withPlayers("ActivePlayer", "Opponent")
+                    .withCardOnBattlefield(1, "Alpharael, Stonechosen")
+                    .withCardOnBattlefield(2, "Devoted Hero")
+                    .withLandsOnBattlefield(1, "Mountain", 1)
+                    .withCardInHand(1, "Shock")
+                    .withLifeTotal(2, 7)
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val devotedHeroId = game.findPermanent("Devoted Hero")!!
+                game.castSpell(1, "Shock", devotedHeroId)
+                game.resolveStack()
+
+                game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
+                game.declareAttackers(mapOf("Alpharael, Stonechosen" to 2))
+                game.resolveStack()
+
+                withClue("Defending player should lose 4 life (ceil(7/2)) and be at 3") {
+                    game.getLifeTotal(2) shouldBe 3
+                }
+            }
+
             test("defending player loses half their life rounded up when Alpharael attacks and a nonland permanent left the battlefield this turn") {
                 val game = scenario()
                     .withPlayers("ActivePlayer", "Opponent")
