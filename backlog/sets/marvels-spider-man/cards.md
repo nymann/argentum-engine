@@ -2,7 +2,7 @@
 
 **Set Size:** 188 booster cards (excluding basic lands and tokens)
 **Release Date:** September 26, 2025
-**Implemented:** 0 / 188
+**Implemented:** 1 / 188
 ---
 
 - [ ] Agent Venom
@@ -106,7 +106,7 @@
 - [ ] Rocket-Powered Goblin Glider
 - [ ] Romantic Rendezvous
 - [ ] SP//dr, Piloted by Peni
-- [ ] Sandman's Quicksand
+- [x] Sandman's Quicksand
 - [ ] Sandman, Shifting Scoundrel
 - [ ] Savage Mansion
 - [ ] Scarlet Spider, Ben Reilly
