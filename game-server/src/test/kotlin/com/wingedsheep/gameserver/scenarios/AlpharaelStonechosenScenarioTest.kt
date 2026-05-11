@@ -53,6 +53,61 @@ class AlpharaelStonechosenScenarioTest : ScenarioTestBase() {
             }
         }
 
+        context("Alpharael, Stonechosen — Ward—Discard a card at random") {
+
+            test("ward counters opponent's targeting spell when opponent has no cards to discard") {
+                val game = scenario()
+                    .withPlayers("PlayerA", "PlayerB")
+                    .withCardOnBattlefield(1, "Alpharael, Stonechosen")
+                    .withCardInHand(2, "Bring Low") // {3}{R} — deals 3 to target creature
+                    .withLandsOnBattlefield(2, "Mountain", 4)
+                    .withActivePlayer(2)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val alpharaelId = game.findPermanent("Alpharael, Stonechosen")!!
+
+                // P2 casts Bring Low targeting Alpharael — P2 has no other cards, cannot pay ward cost
+                game.castSpell(2, "Bring Low", alpharaelId)
+                game.resolveStack()
+
+                // Ward triggered: P2 had no cards to discard at random → ward cost unpayable
+                // → Bring Low must be countered → Alpharael survives
+                withClue("Alpharael should still be on the battlefield (Bring Low countered by ward)") {
+                    game.isOnBattlefield("Alpharael, Stonechosen") shouldBe true
+                }
+            }
+
+            test("ward — opponent discards a card at random and targeting spell resolves when opponent can pay") {
+                val game = scenario()
+                    .withPlayers("PlayerA", "PlayerB")
+                    .withCardOnBattlefield(1, "Alpharael, Stonechosen")
+                    .withCardInHand(2, "Bring Low") // {3}{R}
+                    .withCardInHand(2, "Devoted Hero") // ward payment fodder (discarded at random)
+                    .withLandsOnBattlefield(2, "Mountain", 4)
+                    .withActivePlayer(2)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val alpharaelId = game.findPermanent("Alpharael, Stonechosen")!!
+
+                // P2 casts Bring Low targeting Alpharael; P2 has 1 other card as ward payment
+                game.castSpell(2, "Bring Low", alpharaelId)
+                game.resolveStack()
+
+                // Ward triggered: P2 discarded Devoted Hero at random as ward payment
+                // P2's hand is now empty (cast Bring Low, discarded Devoted Hero)
+                withClue("Player B should have discarded 1 card at random as ward payment") {
+                    game.handSize(2) shouldBe 0
+                }
+
+                // Bring Low resolved after ward was paid → Alpharael (3/3) took 3 damage and died
+                withClue("Alpharael should be in the graveyard (Bring Low resolved after ward paid)") {
+                    game.isInGraveyard(1, "Alpharael, Stonechosen") shouldBe true
+                }
+            }
+        }
+
         context("Alpharael, Stonechosen — Void attack trigger") {
 
             test("defending player loses half their life rounded up when Alpharael attacks and a nonland permanent left the battlefield this turn") {
