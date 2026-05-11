@@ -679,6 +679,32 @@ data class ChooseOptionEffect(
 }
 
 /**
+ * Presents the active player with a list of card types, optionally excluding some, and stores
+ * the chosen type in a named variable. Emits a CardTypeChosenEvent and persists the choice
+ * on a ChosenCardTypeComponent attached to the source entity.
+ *
+ * @property excludedCardTypes Card type display names to omit from the offered list (e.g. "Creature")
+ * @property prompt Custom prompt text; defaults to a generated string if null
+ * @property storeAs Key under which the chosen type is stored in EffectContext.chosenValues
+ */
+@SerialName("ChooseCardType")
+@Serializable
+data class ChooseCardTypeEffect(
+    val excludedCardTypes: List<String> = emptyList(),
+    val prompt: String? = null,
+    val storeAs: String = "chosenCardType"
+) : Effect {
+    override val description: String = buildString {
+        append("Choose a card type")
+        if (excludedCardTypes.isNotEmpty()) {
+            append(" other than ${excludedCardTypes.joinToString(" or ")}")
+        }
+    }
+
+    override fun applyTextReplacement(replacer: TextReplacer): Effect = this
+}
+
+/**
  * Each player (in APNAP order) chooses a creature type.
  * All chosen types are accumulated and stored as a List<String> under [storeAs]
  * in the effect context's storedStringLists.

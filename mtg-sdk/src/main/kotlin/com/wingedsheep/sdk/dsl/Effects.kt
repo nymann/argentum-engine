@@ -94,6 +94,7 @@ import com.wingedsheep.sdk.scripting.effects.RemoveFromCombatEffect
 import com.wingedsheep.sdk.scripting.effects.RepeatCondition
 import com.wingedsheep.sdk.scripting.effects.RepeatWhileEffect
 import com.wingedsheep.sdk.scripting.effects.ReplaceNextDrawWithEffect
+import com.wingedsheep.sdk.scripting.effects.ChooseCardTypeEffect
 import com.wingedsheep.sdk.scripting.effects.ChooseOptionEffect
 import com.wingedsheep.sdk.scripting.effects.ChooseColorForTargetEffect
 import com.wingedsheep.sdk.scripting.effects.BecomeChosenManaColorEffect
@@ -1797,6 +1798,17 @@ object Effects {
      */
     fun StoreNumber(name: String, amount: DynamicAmount): Effect =
         com.wingedsheep.sdk.scripting.effects.StoreNumberEffect(name, amount)
+
+    /**
+     * Prompt the active player to choose a card type, optionally excluding some types.
+     * Emits CardTypeChosenEvent and persists the choice on the source entity
+     * as a ChosenCardTypeComponent.
+     */
+    fun ChooseCardType(
+        excludedCardTypes: List<String> = emptyList(),
+        prompt: String? = null,
+        storeAs: String = "chosenCardType"
+    ): Effect = ChooseCardTypeEffect(excludedCardTypes, prompt, storeAs)
 
     /**
      * Generic pipeline step: choose an option from a set (creature type, color, etc.)

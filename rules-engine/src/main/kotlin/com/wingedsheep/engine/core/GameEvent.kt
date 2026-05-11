@@ -149,6 +149,19 @@ data class CreatureTypeChosenEvent(
 ) : GameEvent
 
 /**
+ * A player chose a card type (e.g., from a 'choose a card type other than Creature' prompt).
+ * This is a public announcement visible to all players.
+ */
+@Serializable
+@SerialName("CardTypeChosenEvent")
+data class CardTypeChosenEvent(
+    val playerId: EntityId,
+    val chosenType: String,
+    val sourceId: EntityId?,
+    val sourceName: String?
+) : GameEvent
+
+/**
  * A creature's type was changed (e.g., "becomes a Goblin until end of turn").
  */
 @Serializable

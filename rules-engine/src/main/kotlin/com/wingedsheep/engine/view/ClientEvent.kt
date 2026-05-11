@@ -1103,6 +1103,8 @@ is PermanentsSacrificedEvent -> {
                 isYours = event.controllerId == viewingPlayerId
             )
 
+            is CardTypeChosenEvent -> null
+
             is TurnHijackedEvent,
             is CommitCrimeEvent -> null
         }

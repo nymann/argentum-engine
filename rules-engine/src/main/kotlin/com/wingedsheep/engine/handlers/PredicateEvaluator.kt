@@ -817,6 +817,9 @@ class PredicateEvaluator {
                 entityPower >= maxPower
             }
 
+            // Rule 700.4 modified — stub; WheneverAModifiedCreatureYouControlDealsCombatDamageToAPlayerHandler implements full check
+            StatePredicate.IsModified -> false
+
             // Composite / logical combinators
             is StatePredicate.Or -> predicate.predicates.any { matchesStatePredicate(state, entityId, it) }
             is StatePredicate.And -> predicate.predicates.all { matchesStatePredicate(state, entityId, it) }

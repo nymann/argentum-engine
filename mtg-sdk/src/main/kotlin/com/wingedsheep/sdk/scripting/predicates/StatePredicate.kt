@@ -161,6 +161,22 @@ sealed interface StatePredicate {
     }
 
     // =============================================================================
+    // Modified State (Rule 700.4)
+    // =============================================================================
+
+    /**
+     * A permanent is modified if it has one or more counters on it, has one or more
+     * Equipment attached, or is enchanted by one or more Auras its controller controls.
+     * Per Rule 700.4. Used by "whenever a modified creature you control deals combat
+     * damage to a player" triggers.
+     */
+    @SerialName("IsModified")
+    @Serializable
+    data object IsModified : StatePredicate {
+        override val description: String = "modified"
+    }
+
+    // =============================================================================
     // Composite / Logical Combinators
     // =============================================================================
 

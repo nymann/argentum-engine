@@ -214,7 +214,7 @@ data class MayCastFromGraveyardWithLifeCost(
 /**
  * This spell may be cast from its owner's graveyard by discarding [discardCount] card(s) as an
  * additional cost alongside the spell's printed mana cost. Unlike Flashback, the spell is NOT
- * exiled after resolution — it goes to the graveyard per normal rules.
+ * exiled after resolution — it goes to the graveyard per normal zone-change rules.
  *
  * The permission is intrinsic: the card itself carries this static ability.
  */

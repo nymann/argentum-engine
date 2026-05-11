@@ -31,3 +31,12 @@ data class ChosenCreatureTypeComponent(
 data class ChosenCreatureComponent(
     val creatureId: EntityId
 ) : Component
+
+/**
+ * Stores the card type chosen by the 'choose a card type' ETB effect.
+ * Used by cards with "When this enters, choose a card type other than Creature."
+ */
+@Serializable
+data class ChosenCardTypeComponent(
+    val chosenCardType: String
+) : Component
