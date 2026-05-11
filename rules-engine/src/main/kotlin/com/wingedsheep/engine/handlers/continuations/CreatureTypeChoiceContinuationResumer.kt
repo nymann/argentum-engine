@@ -7,6 +7,7 @@ import com.wingedsheep.engine.mechanics.layers.SerializableModification
 import com.wingedsheep.engine.mechanics.layers.addFloatingEffect
 import com.wingedsheep.engine.state.GameState
 import com.wingedsheep.engine.state.components.identity.CardComponent
+import com.wingedsheep.engine.state.components.identity.ChosenCardTypeComponent
 import com.wingedsheep.engine.state.components.identity.TextReplacement
 import com.wingedsheep.engine.state.components.identity.TextReplacementCategory
 import com.wingedsheep.engine.state.components.identity.TextReplacementComponent
@@ -22,7 +23,8 @@ class CreatureTypeChoiceContinuationResumer(
         resumer(ChooseToCreatureTypeContinuation::class, ::resumeChooseToCreatureType),
         resumer(ChooseOptionPipelineContinuation::class, ::resumeChooseOptionPipeline),
         resumer(BecomeCreatureTypeContinuation::class, ::resumeBecomeCreatureType),
-        resumer(EachPlayerChoosesCreatureTypeContinuation::class, ::resumeEachPlayerChoosesCreatureType)
+        resumer(EachPlayerChoosesCreatureTypeContinuation::class, ::resumeEachPlayerChoosesCreatureType),
+        resumer(ChooseCardTypeContinuation::class, ::resumeChooseCardType)
     )
 
     /**
@@ -330,6 +332,39 @@ class CreatureTypeChoiceContinuationResumer(
         }
 
         return checkForMore(newState, emptyList())
+    }
+
+    fun resumeChooseCardType(
+        state: GameState,
+        continuation: ChooseCardTypeContinuation,
+        response: DecisionResponse,
+        checkForMore: CheckForMore
+    ): ExecutionResult {
+        if (response !is OptionChosenResponse) {
+            return ExecutionResult.error(state, "Expected OptionChosenResponse for card type choice")
+        }
+
+        val chosenType = continuation.options.getOrNull(response.optionIndex)
+            ?: return ExecutionResult.error(state, "Invalid card type index: ${response.optionIndex}")
+
+        val events = listOf(
+            CardTypeChosenEvent(
+                playerId = continuation.controllerId,
+                chosenType = chosenType,
+                sourceId = continuation.sourceId,
+                sourceName = continuation.sourceName
+            )
+        )
+
+        val newState = if (continuation.sourceId != null && state.getEntity(continuation.sourceId) != null) {
+            state.updateEntity(continuation.sourceId) { container ->
+                container.with(ChosenCardTypeComponent(chosenType))
+            }
+        } else {
+            state
+        }
+
+        return checkForMore(newState, events)
     }
 
 }

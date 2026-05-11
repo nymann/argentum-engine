@@ -112,6 +112,25 @@ data class ChooseOptionPipelineContinuation(
 ) : ContinuationFrame
 
 /**
+ * Resume after player chooses a card type from the 'choose a card type' primitive.
+ *
+ * Emits CardTypeChosenEvent and attaches ChosenCardTypeComponent to the source entity.
+ *
+ * @property controllerId The player choosing
+ * @property sourceId The ability/permanent source
+ * @property sourceName Name of the source for display
+ * @property options The card type display names offered to the player
+ */
+@Serializable
+data class ChooseCardTypeContinuation(
+    override val decisionId: String,
+    val controllerId: EntityId,
+    val sourceId: EntityId?,
+    val sourceName: String?,
+    val options: List<String>
+) : ContinuationFrame
+
+/**
  * Resume after the chooser picks one of two pre-existing pipeline collections
  * (a "pile"). Index 0 = pile A, index 1 = pile B. Used by [ChoosePileEffect]
  * (Fact or Fiction's "you choose which pile is which" step).

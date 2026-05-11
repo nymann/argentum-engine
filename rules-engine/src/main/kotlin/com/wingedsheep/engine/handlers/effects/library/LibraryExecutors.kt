@@ -1,6 +1,7 @@
 package com.wingedsheep.engine.handlers.effects.library
 
 import com.wingedsheep.engine.handlers.TargetFinder
+import com.wingedsheep.engine.handlers.effects.ChooseCardTypeEffectHandler
 import com.wingedsheep.engine.handlers.effects.EffectExecutor
 import com.wingedsheep.engine.handlers.effects.ExecutorModule
 import com.wingedsheep.engine.registry.CardRegistry
@@ -25,6 +26,7 @@ class LibraryExecutors(
         GatherSubtypesExecutor(),
         ChooseCreatureTypePipelineExecutor(),
         ChooseOptionPipelineExecutor(),
+        ChooseCardTypeEffectHandler(),
         GatherCardsExecutor(),
         SelectFromCollectionExecutor(),
         ChoosePileExecutor(),
