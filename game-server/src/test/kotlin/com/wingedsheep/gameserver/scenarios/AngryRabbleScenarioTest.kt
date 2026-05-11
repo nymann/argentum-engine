@@ -21,6 +21,51 @@ import io.kotest.matchers.shouldBe
 class AngryRabbleScenarioTest : ScenarioTestBase() {
 
     init {
+        context("Angry Rabble trigger — cast-spell with mana value 4+") {
+
+            test("deals 1 damage to opponent when a spell with mana value 4 or greater is cast") {
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withCardOnBattlefield(1, "Angry Rabble")
+                    .withCardInHand(1, "Fire Elemental")      // {3}{R}{R}, MV 5
+                    .withLandsOnBattlefield(1, "Mountain", 5)
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val castResult = game.castSpell(1, "Fire Elemental")
+                withClue("Casting Fire Elemental should succeed: ${castResult.error}") {
+                    castResult.error shouldBe null
+                }
+                game.resolveStack()
+
+                withClue("Opponent should be at 19 life after Angry Rabble's trigger") {
+                    game.getLifeTotal(2) shouldBe 19
+                }
+            }
+
+            test("does not trigger when a spell with mana value 3 or less is cast") {
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withCardOnBattlefield(1, "Angry Rabble")
+                    .withCardInHand(1, "Glory Seeker")         // {1}{W}, MV 2
+                    .withLandsOnBattlefield(1, "Plains", 2)
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val castResult = game.castSpell(1, "Glory Seeker")
+                withClue("Casting Glory Seeker should succeed: ${castResult.error}") {
+                    castResult.error shouldBe null
+                }
+                game.resolveStack()
+
+                withClue("Opponent should remain at 20 life (trigger did not fire for MV <= 3)") {
+                    game.getLifeTotal(2) shouldBe 20
+                }
+            }
+        }
+
         context("Angry Rabble — casting") {
 
             test("enters the battlefield as a 2/2 Trample Human Citizen when cast for {1}{R}") {
