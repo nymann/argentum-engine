@@ -454,6 +454,17 @@ data class ExileEntryTurnComponent(
 ) : Component
 
 /**
+ * Marks a graveyard card as having been discarded by its owner on the given turn.
+ * Stamped by the discard executor when a card moves to the graveyard via a discard
+ * effect. Required by the Mayhem enumerator: Mayhem only offers a graveyard cast
+ * when the card was discarded this turn (matching [turnNumber] == current turn).
+ */
+@Serializable
+data class DiscardedThisTurnComponent(
+    val turnNumber: Int
+) : Component
+
+/**
  * Marks a permanent as having had its [com.wingedsheep.sdk.scripting.GrantMayCastFromLinkedExile]
  * permission used this turn. Used to enforce the `oncePerTurn` flag on that static ability
  * (e.g., Maralen, Fae Ascendant). Cleared at end of turn by CleanupPhaseManager.

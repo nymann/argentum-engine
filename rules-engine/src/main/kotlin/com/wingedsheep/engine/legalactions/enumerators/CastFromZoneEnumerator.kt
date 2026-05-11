@@ -8,6 +8,7 @@ import com.wingedsheep.engine.legalactions.AdditionalCostData
 import com.wingedsheep.engine.legalactions.EnumerationContext
 import com.wingedsheep.engine.legalactions.LegalAction
 import com.wingedsheep.engine.state.ZoneKey
+import com.wingedsheep.engine.state.components.battlefield.DiscardedThisTurnComponent
 import com.wingedsheep.engine.state.components.battlefield.LinkedExileComponent
 import com.wingedsheep.engine.state.components.identity.CardComponent
 import com.wingedsheep.engine.state.components.identity.CommanderComponent
@@ -55,6 +56,7 @@ class CastFromZoneEnumerator : ActionEnumerator {
         enumerateGraveyardPermanents(context, result)
         enumerateGraveyardCreaturesWithForage(context, result)
         enumerateFlashback(context, result)
+        enumerateMayhem(context, result)
         enumerateGraveyardWithLifeCost(context, result)
         enumerateWarpFromHand(context, result)
         enumerateCommandZone(context, result)
@@ -1733,5 +1735,52 @@ class CastFromZoneEnumerator : ActionEnumerator {
             }
         }
         return true
+    }
+
+    // =========================================================================
+    // Mayhem (cast from graveyard when discarded this turn)
+    // =========================================================================
+
+    private fun enumerateMayhem(
+        context: EnumerationContext,
+        result: MutableList<LegalAction>
+    ) {
+        if (!context.canPlaySorcerySpeed) return
+        val state = context.state
+        val playerId = context.playerId
+        val graveyardCards = state.getZone(ZoneKey(playerId, Zone.GRAVEYARD))
+
+        for (cardId in graveyardCards) {
+            val container = state.getEntity(cardId) ?: continue
+            val cardComponent = container.get<CardComponent>() ?: continue
+            val cardDef = context.cardRegistry.getCard(cardComponent.cardDefinitionId) ?: continue
+
+            val mayhem = cardDef.keywordAbilities
+                .filterIsInstance<KeywordAbility.Mayhem>()
+                .firstOrNull() ?: continue
+
+            // Mayhem only available when the card was discarded this turn.
+            val discardStamp = container.get<DiscardedThisTurnComponent>() ?: continue
+            if (discardStamp.turnNumber != state.turnNumber) continue
+
+            val effectiveCost = context.costCalculator.calculateEffectiveCostWithAlternativeBase(
+                state, cardDef, mayhem.cost, playerId
+            )
+            val costString = effectiveCost.toString()
+            val canAfford = context.manaSolver.canPay(
+                state, playerId, effectiveCost, precomputedSources = context.availableManaSources
+            )
+
+            result.add(
+                LegalAction(
+                    actionType = "CastWithMayhem",
+                    description = "Cast ${cardComponent.name} (Mayhem)",
+                    action = CastSpell(playerId, cardId, useAlternativeCost = true),
+                    affordable = canAfford,
+                    manaCostString = costString,
+                    sourceZone = "GRAVEYARD"
+                )
+            )
+        }
     }
 }
