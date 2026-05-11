@@ -123,5 +123,29 @@ class AgentVenomScenarioTest : ScenarioTestBase() {
                 game.handSize(1) shouldBe 0
             }
         }
+
+        context("Agent Venom — triggered ability does NOT fire on its own death") {
+            test("Agent Venom dying does not trigger its own ability") {
+                // Player 1 controls only Agent Venom. Opponent destroys it with Wrath of God.
+                // The trigger binding is OTHER, so Agent Venom never watches its own death.
+                val game = scenario()
+                    .withPlayers("Player", "Opponent")
+                    .withCardOnBattlefield(1, "Agent Venom")
+                    .withCardInHand(2, "Wrath of God")
+                    .withLandsOnBattlefield(2, "Plains", 4)
+                    .withCardInLibrary(1, "Forest")
+                    .withCardInLibrary(2, "Forest")
+                    .withActivePlayer(2)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                game.castSpell(2, "Wrath of God")
+                game.resolveStack()
+
+                game.isOnBattlefield("Agent Venom") shouldBe false
+                game.getLifeTotal(1) shouldBe 20
+                game.handSize(1) shouldBe 0
+            }
+        }
     }
 }
