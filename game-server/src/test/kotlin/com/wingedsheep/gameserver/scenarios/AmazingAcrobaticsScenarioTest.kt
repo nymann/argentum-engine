@@ -76,6 +76,70 @@ class AmazingAcrobaticsScenarioTest : ScenarioTestBase() {
             }
         }
 
+        context("Amazing Acrobatics — both modes") {
+
+            test("counters the spell and taps the creature when both modes are chosen") {
+                // P2 is active: they cast a spell (on the stack) and also have a creature already on the battlefield
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withActivePlayer(2)
+                    .withCardInHand(1, "Amazing Acrobatics")
+                    .withLandsOnBattlefield(1, "Island", 3)
+                    .withCardInHand(2, "Grizzly Bears")
+                    .withCardOnBattlefield(2, "Glory Seeker")
+                    .withLandsOnBattlefield(2, "Forest", 2)
+                    .withCardInLibrary(1, "Island")
+                    .withCardInLibrary(2, "Forest")
+                    .build()
+
+                // P2 casts Grizzly Bears; it goes on the stack. P1 gets priority.
+                game.castSpell(2, "Grizzly Bears")
+                game.passPriority()
+
+                val spellOnStack = game.state.stack.find { entityId ->
+                    game.state.getEntity(entityId)?.get<CardComponent>()?.name == "Grizzly Bears"
+                }!!
+                val seekerId = game.findPermanent("Glory Seeker")!!
+                val acrobaticsId = game.state.getHand(game.player1Id).find { entityId ->
+                    game.state.getEntity(entityId)?.get<CardComponent>()?.name == "Amazing Acrobatics"
+                }!!
+
+                // Cast Amazing Acrobatics choosing BOTH modes:
+                //   mode 0 → counter Grizzly Bears (on stack)
+                //   mode 1 → tap Glory Seeker (on battlefield)
+                val result = game.execute(
+                    CastSpell(
+                        playerId = game.player1Id,
+                        cardId = acrobaticsId,
+                        targets = listOf(ChosenTarget.Spell(spellOnStack), ChosenTarget.Permanent(seekerId)),
+                        chosenModes = listOf(0, 1),
+                        modeTargetsOrdered = listOf(
+                            listOf(ChosenTarget.Spell(spellOnStack)),
+                            listOf(ChosenTarget.Permanent(seekerId))
+                        )
+                    )
+                )
+                withClue("Casting Amazing Acrobatics (both modes) should succeed: ${result.error}") {
+                    result.isSuccess shouldBe true
+                }
+
+                game.resolveStack()
+
+                withClue("Grizzly Bears should be countered and in opponent's graveyard") {
+                    game.isInGraveyard(2, "Grizzly Bears") shouldBe true
+                }
+                withClue("Grizzly Bears should not be on the battlefield") {
+                    game.isOnBattlefield("Grizzly Bears") shouldBe false
+                }
+                withClue("Glory Seeker should be tapped") {
+                    game.state.getEntity(seekerId)?.get<TappedComponent>() shouldBe TappedComponent
+                }
+                withClue("Amazing Acrobatics should be in its owner's graveyard after resolution") {
+                    game.isInGraveyard(1, "Amazing Acrobatics") shouldBe true
+                }
+            }
+        }
+
         context("Amazing Acrobatics — tap mode only") {
 
             test("taps both targeted creatures when two targets are chosen") {
