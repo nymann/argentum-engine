@@ -5,7 +5,10 @@ import com.wingedsheep.engine.handlers.DecisionHandler
 import com.wingedsheep.engine.handlers.effects.drawing.EachPlayerDiscardsOrLoseLifeExecutor
 import com.wingedsheep.engine.state.GameState
 import com.wingedsheep.engine.state.ZoneKey
+import com.wingedsheep.engine.state.components.battlefield.CountersComponent
 import com.wingedsheep.engine.state.components.identity.CardComponent
+import com.wingedsheep.sdk.core.Counters
+import com.wingedsheep.sdk.core.CounterType
 import com.wingedsheep.sdk.core.Zone
 
 class DiscardAndDrawContinuationResumer(
@@ -14,7 +17,8 @@ class DiscardAndDrawContinuationResumer(
 
     override fun resumers(): List<ContinuationResumer<*>> = listOf(
         resumer(HandSizeDiscardContinuation::class, ::resumeHandSizeDiscard),
-        resumer(EachPlayerDiscardsOrLoseLifeContinuation::class, ::resumeEachPlayerDiscardsOrLoseLife)
+        resumer(EachPlayerDiscardsOrLoseLifeContinuation::class, ::resumeEachPlayerDiscardsOrLoseLife),
+        resumer(ConniveContinuation::class, ::resumeConnive)
     )
 
     fun resumeHandSizeDiscard(
@@ -263,6 +267,52 @@ class DiscardAndDrawContinuationResumer(
             decisionResult.pendingDecision,
             priorEvents + decisionResult.events
         )
+    }
+
+    fun resumeConnive(
+        state: GameState,
+        continuation: ConniveContinuation,
+        response: DecisionResponse,
+        checkForMore: CheckForMore
+    ): ExecutionResult {
+        if (response !is CardsSelectedResponse) {
+            return ExecutionResult.error(state, "Expected card selection for connive discard")
+        }
+
+        val selectedCards = response.selectedCards
+        val playerId = continuation.controllerId
+        val handZone = ZoneKey(playerId, Zone.HAND)
+        val graveyardZone = ZoneKey(playerId, Zone.GRAVEYARD)
+
+        var newState = state
+        for (cardId in selectedCards) {
+            newState = newState.removeFromZone(handZone, cardId)
+            newState = newState.addToZone(graveyardZone, cardId)
+        }
+
+        val events = mutableListOf<GameEvent>()
+
+        if (selectedCards.isNotEmpty()) {
+            val discardNames = selectedCards.map { state.getEntity(it)?.get<CardComponent>()?.name ?: "Card" }
+            events.add(CardsDiscardedEvent(playerId, selectedCards, discardNames))
+        }
+
+        // If any discarded card is a nonland, put a +1/+1 counter on the connive source
+        val discardedNonland = selectedCards.isNotEmpty() && selectedCards.any { cardId ->
+            state.getEntity(cardId)?.get<CardComponent>()?.isLand == false
+        }
+
+        if (discardedNonland) {
+            val sourceId = continuation.conniveSourceId
+            val current = newState.getEntity(sourceId)?.get<CountersComponent>() ?: CountersComponent()
+            newState = newState.updateEntity(sourceId) { container ->
+                container.with(current.withAdded(CounterType.PLUS_ONE_PLUS_ONE, 1))
+            }
+            val entityName = state.getEntity(sourceId)?.get<CardComponent>()?.name ?: ""
+            events.add(CountersAddedEvent(sourceId, Counters.PLUS_ONE_PLUS_ONE, 1, entityName))
+        }
+
+        return checkForMore(newState, events)
     }
 
 }

@@ -47,6 +47,7 @@ class DrawingExecutors(
         eachPlayerReturnsPermanentToHandExecutor,
         EachPlayerDiscardsOrLoseLifeExecutor(decisionHandler),
         ReplaceNextDrawWithExecutor(),
-        ReadTheRunesExecutor(amountEvaluator, decisionHandler, cardRegistry)
+        ReadTheRunesExecutor(amountEvaluator, decisionHandler, cardRegistry),
+        com.wingedsheep.engine.handlers.effects.ConniveEffectHandler(cardRegistry, decisionHandler)
     )
 }
