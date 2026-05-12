@@ -2,7 +2,7 @@
 
 **Set Size:** 188 booster cards (excluding basic lands and tokens)
 **Release Date:** September 26, 2025
-**Implemented:** 0 / 188
+**Implemented:** 1 / 188
 ---
 
 - [ ] Agent Venom
@@ -13,7 +13,7 @@
 - [ ] Arachne, Psionic Weaver
 - [ ] Araña, Heart of the Spider
 - [ ] Aunt May
-- [ ] Bagel and Schmear
+- [x] Bagel and Schmear
 - [ ] Beetle, Legacy Criminal
 - [ ] Behold the Sinister Six!
 - [ ] Biorganic Carapace
