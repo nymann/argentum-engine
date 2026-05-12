@@ -543,7 +543,10 @@ class TriggerMatcher(
                 predicate.predicates.all { matchesCardPredicate(it, cardComponent, projected, entityId, isFaceDown, lastKnownPower, lastKnownToughness, lastKnownWasToken) }
             is com.wingedsheep.sdk.scripting.predicates.CardPredicate.Not ->
                 !matchesCardPredicate(predicate.predicate, cardComponent, projected, entityId, isFaceDown, lastKnownPower, lastKnownToughness, lastKnownWasToken)
-            else -> true // Unknown predicates pass through
+            else -> error(
+                "TriggerMatcher.matchesCardPredicate has no branch for ${predicate::class.simpleName}. " +
+                "Add an explicit branch — silent pass-through hid the IsNontoken bug for months."
+            )
         }
     }
 
