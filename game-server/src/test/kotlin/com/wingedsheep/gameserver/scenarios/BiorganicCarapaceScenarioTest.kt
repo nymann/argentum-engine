@@ -1,8 +1,10 @@
 package com.wingedsheep.gameserver.scenarios
 
+import com.wingedsheep.engine.core.ActivateAbility
 import com.wingedsheep.engine.state.components.battlefield.AttachedToComponent
 import com.wingedsheep.engine.state.components.battlefield.AttachmentsComponent
 import com.wingedsheep.engine.state.components.battlefield.CountersComponent
+import com.wingedsheep.engine.state.components.stack.ChosenTarget
 import com.wingedsheep.gameserver.ScenarioTestBase
 import com.wingedsheep.sdk.core.CounterType
 import com.wingedsheep.sdk.core.Phase
@@ -79,6 +81,82 @@ class BiorganicCarapaceScenarioTest : ScenarioTestBase() {
                 }
                 withClue("Active player draws 2 cards: one for equipped Glory Seeker, one for counter-bearing Devoted Hero; Enormous Baloth is unmodified and not counted") {
                     game.handSize(1) shouldBe initialHandSize + 2
+                }
+            }
+        }
+
+        context("Biorganic Carapace Equip {2} activated ability") {
+
+            test("Equip moves attachment from creature A to creature B and updates +2/+2 bonus") {
+                // Biorganic Carapace pre-attached to Glory Seeker (creature A → 4/4).
+                // Devoted Hero (1/2) is creature B with no equipment.
+                // 2 Plains provide the {2} generic cost.
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withCardOnBattlefield(1, "Biorganic Carapace")
+                    .withCardOnBattlefield(1, "Glory Seeker")   // creature A
+                    .withCardOnBattlefield(1, "Devoted Hero")   // creature B
+                    .withLandsOnBattlefield(1, "Plains", 2)
+                    .withCardInLibrary(1, "Plains")
+                    .withCardInLibrary(2, "Island")
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val carapaceId = game.findPermanent("Biorganic Carapace")!!
+                val glorySeekerId = game.findPermanent("Glory Seeker")!!
+                val devotedHeroId = game.findPermanent("Devoted Hero")!!
+
+                // Pre-attach Biorganic Carapace to Glory Seeker
+                game.state = game.state
+                    .updateEntity(carapaceId) { it.with(AttachedToComponent(glorySeekerId)) }
+                    .updateEntity(glorySeekerId) { container ->
+                        val existing = container.get<AttachmentsComponent>()
+                        container.with(AttachmentsComponent((existing?.attachedIds ?: emptyList()) + carapaceId))
+                    }
+
+                withClue("Glory Seeker (equipped) power should be 4 before re-equip") {
+                    game.state.projectedState.getPower(glorySeekerId) shouldBe 4
+                }
+                withClue("Devoted Hero (unequipped) power should be 1 before re-equip") {
+                    game.state.projectedState.getPower(devotedHeroId) shouldBe 1
+                }
+
+                val equipAbility = cardRegistry.getCard("Biorganic Carapace")!!.script.activatedAbilities.first()
+                val result = game.execute(
+                    ActivateAbility(
+                        playerId = game.player1Id,
+                        sourceId = carapaceId,
+                        abilityId = equipAbility.id,
+                        targets = listOf(ChosenTarget.Permanent(devotedHeroId))
+                    )
+                )
+                withClue("Equip activation should succeed: ${result.error}") {
+                    result.error shouldBe null
+                }
+                game.resolveStack()
+
+                val attachedTo = game.state.getEntity(carapaceId)!!.get<AttachedToComponent>()
+                withClue("Biorganic Carapace should now be attached to Devoted Hero") {
+                    attachedTo shouldNotBe null
+                    attachedTo!!.targetId shouldBe devotedHeroId
+                }
+                withClue("Glory Seeker should no longer have Biorganic Carapace attached") {
+                    val gloryAttachments = game.state.getEntity(glorySeekerId)!!.get<AttachmentsComponent>()
+                    val stillAttached = gloryAttachments?.attachedIds?.contains(carapaceId) == true
+                    stillAttached shouldBe false
+                }
+                withClue("Devoted Hero (now equipped) power should be 3 (1 + 2)") {
+                    game.state.projectedState.getPower(devotedHeroId) shouldBe 3
+                }
+                withClue("Devoted Hero (now equipped) toughness should be 4 (2 + 2)") {
+                    game.state.projectedState.getToughness(devotedHeroId) shouldBe 4
+                }
+                withClue("Glory Seeker should no longer benefit from +2/+2 — power back to 2") {
+                    game.state.projectedState.getPower(glorySeekerId) shouldBe 2
+                }
+                withClue("Glory Seeker should no longer benefit from +2/+2 — toughness back to 2") {
+                    game.state.projectedState.getToughness(glorySeekerId) shouldBe 2
                 }
             }
         }
