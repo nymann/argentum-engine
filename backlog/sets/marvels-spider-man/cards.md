@@ -2,7 +2,7 @@
 
 **Set Size:** 188 booster cards (excluding basic lands and tokens)
 **Release Date:** September 26, 2025
-**Implemented:** 4 / 188
+**Implemented:** 5 / 188
 ---
 
 - [x] Agent Venom
@@ -94,7 +94,7 @@
 - [ ] Pictures of Spider-Man
 - [ ] Prison Break
 - [ ] Professional Wrestler
-- [ ] Prowler, Clawed Thief
+- [x] Prowler, Clawed Thief
 - [ ] Pumpkin Bombardment
 - [ ] Radioactive Spider
 - [ ] Raging Goblinoids
