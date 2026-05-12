@@ -307,28 +307,16 @@ class ReadTheRunesExecutor(
 
         /**
          * Discard a card.
+         *
+         * Delegates to the canonical
+         * [com.wingedsheep.engine.handlers.effects.ZoneTransitionService.discardCard]
+         * so every "move card from hand to graveyard" path emits the same
+         * `CardsDiscardedEvent` + `ZoneChangeEvent` pair regardless of caller.
          */
         fun discardCard(state: GameState, playerId: EntityId, cardId: EntityId): EffectResult {
-            val handZone = ZoneKey(playerId, Zone.HAND)
-            val graveyardZone = ZoneKey(playerId, Zone.GRAVEYARD)
-
-            val cardName = state.getEntity(cardId)?.get<CardComponent>()?.name ?: "Unknown"
-
-            var newState = state.removeFromZone(handZone, cardId)
-            newState = newState.addToZone(graveyardZone, cardId)
-
-            val events = listOf(
-                CardsDiscardedEvent(playerId, listOf(cardId), listOf(cardName)),
-                ZoneChangeEvent(
-                    entityId = cardId,
-                    entityName = cardName,
-                    fromZone = Zone.HAND,
-                    toZone = Zone.GRAVEYARD,
-                    ownerId = playerId
-                )
-            )
-
-            return EffectResult.success(newState, events)
+            val transition = com.wingedsheep.engine.handlers.effects.ZoneTransitionService
+                .discardCard(state, playerId, cardId)
+            return EffectResult.success(transition.state, transition.events)
         }
     }
 }

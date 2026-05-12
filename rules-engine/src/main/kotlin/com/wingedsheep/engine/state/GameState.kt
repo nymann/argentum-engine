@@ -119,6 +119,18 @@ data class GameState(
      * `CommanderDamageLossCheck` SBA against [Format.Commander.commanderDamageThreshold].
      */
     val commanderDamage: List<CommanderDamageEntry> = emptyList(),
+
+    /**
+     * Deterministic seed for in-game RNG draws (ward random discard, future coin flips, etc.).
+     *
+     * Held on [GameState] so that any code path needing a "fair" random choice has a single
+     * source of truth that is part of the serialised state — replays and AI rollouts get the
+     * same outcomes. Callers should obtain a [kotlin.random.Random] via [nextRandom] and
+     * persist the returned new state so the seed advances on every consumption.
+     *
+     * Defaults to `0L` so existing tests and saved states need no migration.
+     */
+    val rngSeed: Long = 0L,
 ) {
     /**
      * Cached projection of the game state with all continuous effects (Rule 613) applied.
@@ -496,6 +508,30 @@ data class GameState(
     fun getNextPlayer(afterPlayer: EntityId): EntityId {
         val index = turnOrder.indexOf(afterPlayer)
         return turnOrder[(index + 1) % turnOrder.size]
+    }
+
+    /**
+     * Consume the in-game RNG.
+     *
+     * Returns a [kotlin.random.Random] seeded from the current [rngSeed] together with a
+     * new [GameState] whose seed has been advanced. Callers MUST use the returned state
+     * for any subsequent operation — re-reading [rngSeed] on the same state will yield
+     * the same outcome (which is the determinism guarantee, not a bug).
+     *
+     * Uses the well-known SplitMix64 finalizer to derive both the per-call random source
+     * and the next seed, so consecutive draws decorrelate even though the input seed is
+     * incremented by one each time.
+     */
+    fun nextRandom(): Pair<kotlin.random.Random, GameState> {
+        // Deterministically derive a Random from the current seed, and advance the seed
+        // for the next consumer. We pull two longs from a kotlin.random.Random seeded
+        // with the current rngSeed: the first becomes the new seed (so consecutive draws
+        // jump around the long space and decorrelate), the second seeds the Random we
+        // hand back to the caller.
+        val source = kotlin.random.Random(rngSeed)
+        val nextSeed = source.nextLong()
+        val drawSeed = source.nextLong()
+        return kotlin.random.Random(drawSeed) to copy(rngSeed = nextSeed)
     }
 
     companion object {
