@@ -1,5 +1,8 @@
 package com.wingedsheep.gameserver.scenarios
 
+import com.wingedsheep.engine.core.CardsDiscardedEvent
+import com.wingedsheep.engine.core.CardsDrawnEvent
+import com.wingedsheep.engine.core.GameEvent
 import com.wingedsheep.gameserver.ScenarioTestBase
 import com.wingedsheep.sdk.core.Phase
 import com.wingedsheep.sdk.core.Step
@@ -39,13 +42,18 @@ class RomanticRendezvousScenarioTest : ScenarioTestBase() {
                 val initialOpponentLibrarySize = game.librarySize(2)
                 val initialOpponentLife = game.getLifeTotal(2)
 
+                // Accumulate events across every action so we can assert ordering below.
+                val emittedEvents = mutableListOf<GameEvent>()
+
                 val castResult = game.castSpell(1, "Romantic Rendezvous")
+                emittedEvents += castResult.events
                 withClue("Casting Romantic Rendezvous should succeed: ${castResult.error}") {
                     castResult.error shouldBe null
                 }
 
                 // Spell resolves; engine presents a SelectCardsDecision for the discard
-                game.resolveStack()
+                val resolveResults = game.resolveStack()
+                resolveResults.forEach { emittedEvents += it.events }
 
                 withClue("Engine should present a discard selection decision") {
                     game.hasPendingDecision() shouldBe true
@@ -56,7 +64,8 @@ class RomanticRendezvousScenarioTest : ScenarioTestBase() {
                 withClue("Grizzly Bears should still be in hand when discard decision is presented") {
                     bearInHand.isNotEmpty() shouldBe true
                 }
-                game.selectCards(bearInHand)
+                val selectResult = game.selectCards(bearInHand)
+                emittedEvents += selectResult.events
 
                 // After discard, the engine automatically draws two cards
                 withClue("Romantic Rendezvous should be in the caster's graveyard after resolution") {
@@ -76,6 +85,26 @@ class RomanticRendezvousScenarioTest : ScenarioTestBase() {
                 }
                 withClue("Opponent's life total should be unchanged") {
                     game.getLifeTotal(2) shouldBe initialOpponentLife
+                }
+
+                // CR sequential resolution: 'A, then B' means A fully resolves before B.
+                // The discard's CardsDiscardedEvent MUST be emitted before CardsDrawnEvent
+                // so that 'whenever you discard' triggers, madness, and dredge see the
+                // correct intermediate state.
+                val discardIdx = emittedEvents.indexOfFirst {
+                    it is CardsDiscardedEvent && it.playerId == game.player1Id
+                }
+                val drawIdx = emittedEvents.indexOfFirst {
+                    it is CardsDrawnEvent && it.playerId == game.player1Id && it.count == 2
+                }
+                withClue("Caster should have emitted a CardsDiscardedEvent") {
+                    (discardIdx >= 0) shouldBe true
+                }
+                withClue("Caster should have emitted a CardsDrawnEvent for 2 cards") {
+                    (drawIdx >= 0) shouldBe true
+                }
+                withClue("Discard must emit before draw so 'whenever you discard' triggers see correct state") {
+                    (discardIdx < drawIdx) shouldBe true
                 }
             }
         }
