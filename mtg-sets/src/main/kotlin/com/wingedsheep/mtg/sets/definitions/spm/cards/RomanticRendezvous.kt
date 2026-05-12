@@ -22,7 +22,7 @@ val RomanticRendezvous = card("Romantic Rendezvous") {
 
     metadata {
         rarity = Rarity.COMMON
-        collectorNumber = "148"
+        collectorNumber = "86"
         artist = "Dmitry Burmak"
         imageUri = "https://cards.scryfall.io/normal/front/b/7/b7e1c2ef-6e83-4b87-84c6-7dbf5dec8e50.jpg?1757377869"
     }
