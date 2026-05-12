@@ -2,7 +2,7 @@
 
 **Set Size:** 188 booster cards (excluding basic lands and tokens)
 **Release Date:** September 26, 2025
-**Implemented:** 0 / 188
+**Implemented:** 1 / 188
 ---
 
 - [ ] Agent Venom
@@ -55,7 +55,7 @@
 - [ ] Inner Demons Gangsters
 - [ ] Interdimensional Web Watch
 - [ ] Iron Spider, Stark Upgrade
-- [ ] J. Jonah Jameson
+- [x] J. Jonah Jameson
 - [ ] Jackal, Genius Geneticist
 - [ ] Kapow!
 - [ ] Kraven the Hunter
