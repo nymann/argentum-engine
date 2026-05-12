@@ -18,7 +18,7 @@ import com.wingedsheep.sdk.scripting.targets.EffectTarget
  * Legendary Creature — Symbiote Soldier Hero
  * 2/3
  * Flash, Menace
- * Whenever another nontoken creature you control dies, draw a card and lose 1 life.
+ * Whenever another nontoken creature you control dies, you draw a card and lose 1 life.
  */
 val AgentVenom = card("Agent Venom") {
     manaCost = "{2}{B}"
@@ -26,7 +26,7 @@ val AgentVenom = card("Agent Venom") {
     typeLine = "Legendary Creature — Symbiote Soldier Hero"
     power = 2
     toughness = 3
-    oracleText = "Flash\nMenace\nWhenever another nontoken creature you control dies, draw a card and lose 1 life."
+    oracleText = "Flash\nMenace\nWhenever another nontoken creature you control dies, you draw a card and lose 1 life."
 
     keywords(Keyword.FLASH, Keyword.MENACE)
 
