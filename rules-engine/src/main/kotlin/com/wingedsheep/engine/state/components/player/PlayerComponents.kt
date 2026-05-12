@@ -556,3 +556,15 @@ data class SpellKeywordGrant(
     val keyword: Keyword,
     val spellFilter: GameObjectFilter
 )
+
+/**
+ * Synthetic static modifier: the controller does not lose unspent mana of the given color
+ * as steps and phases end (Rule 500.4).
+ *
+ * Applied directly to a player entity rather than via a card definition, so tests can
+ * construct minimal game states without card registrations.
+ *
+ * @param color The color of mana that survives step/phase transitions.
+ */
+@Serializable
+data class PreserveUnspentManaOfColorComponent(val color: Color) : Component
