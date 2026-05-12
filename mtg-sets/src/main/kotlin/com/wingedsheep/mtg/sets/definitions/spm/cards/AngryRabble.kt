@@ -48,8 +48,8 @@ val AngryRabble = card("Angry Rabble") {
 
     metadata {
         rarity = Rarity.COMMON
-        collectorNumber = "1"
-        artist = ""
-        imageUri = ""
+        collectorNumber = "75"
+        artist = "Bartek Fedyczak"
+        imageUri = "https://cards.scryfall.io/normal/front/9/3/938730fa-496f-4871-80ec-3e9843ecb219.jpg?1757377232"
     }
 }
