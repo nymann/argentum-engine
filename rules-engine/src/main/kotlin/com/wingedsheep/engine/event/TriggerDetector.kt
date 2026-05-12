@@ -34,6 +34,7 @@ import com.wingedsheep.sdk.core.CounterType
 import com.wingedsheep.sdk.core.Step
 import com.wingedsheep.sdk.core.Zone
 import com.wingedsheep.sdk.model.EntityId
+import com.wingedsheep.engine.handlers.triggers.TriggerAtEachPlayerSFirstMainPhaseHandler
 import com.wingedsheep.sdk.scripting.*
 import com.wingedsheep.sdk.scripting.events.DamageType
 import com.wingedsheep.sdk.scripting.events.RecipientFilter
@@ -317,12 +318,15 @@ class TriggerDetector(
             for (ability in entry.abilities) {
                 if (ability.activeZone != Zone.BATTLEFIELD) continue
                 if (matcher.matchesStepTrigger(ability.trigger, step, entry.controllerId, activePlayerId)) {
+                    val effectiveControllerId = TriggerAtEachPlayerSFirstMainPhaseHandler.resolveController(
+                        ability, entry.controllerId, activePlayerId
+                    )
                     triggers.add(
                         PendingTrigger(
                             ability = ability,
                             sourceId = entry.entityId,
                             sourceName = entry.cardComponent.name,
-                            controllerId = entry.controllerId,
+                            controllerId = effectiveControllerId,
                             triggerContext = TriggerContext(step = step, triggeringEntityId = activePlayerId)
                         )
                     )
