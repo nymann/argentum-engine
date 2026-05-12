@@ -9,7 +9,6 @@ import com.wingedsheep.sdk.scripting.GameEvent.ZoneChangeEvent
 import com.wingedsheep.sdk.scripting.GameObjectFilter
 import com.wingedsheep.sdk.scripting.TriggerBinding
 import com.wingedsheep.sdk.scripting.TriggerSpec
-import com.wingedsheep.sdk.scripting.predicates.CardPredicate
 import com.wingedsheep.sdk.scripting.targets.EffectTarget
 
 /**
@@ -33,9 +32,7 @@ val AgentVenom = card("Agent Venom") {
     triggeredAbility {
         trigger = TriggerSpec(
             event = ZoneChangeEvent(
-                filter = GameObjectFilter.Creature.youControl().copy(
-                    cardPredicates = GameObjectFilter.Creature.cardPredicates + CardPredicate.IsNontoken
-                ),
+                filter = GameObjectFilter.Creature.youControl().nontoken(),
                 from = Zone.BATTLEFIELD,
                 to = Zone.GRAVEYARD
             ),
