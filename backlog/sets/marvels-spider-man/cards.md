@@ -2,7 +2,7 @@
 
 **Set Size:** 188 booster cards (excluding basic lands and tokens)
 **Release Date:** September 26, 2025
-**Implemented:** 0 / 188
+**Implemented:** 1 / 188
 ---
 
 - [ ] Agent Venom
@@ -61,7 +61,7 @@
 - [ ] Kraven the Hunter
 - [ ] Kraven's Cats
 - [ ] Kraven's Last Hunt
-- [ ] Kraven, Proud Predator
+- [x] Kraven, Proud Predator
 - [ ] Lady Octopus, Inspired Inventor
 - [ ] Living Brain, Mechanical Marvel
 - [ ] Lizard, Connors's Curse
