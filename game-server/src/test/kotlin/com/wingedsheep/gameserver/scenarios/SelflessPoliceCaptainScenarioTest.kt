@@ -63,5 +63,71 @@ class SelflessPoliceCaptainScenarioTest : ScenarioTestBase() {
                 }
             }
         }
+
+        context("Selfless Police Captain — leaves-the-battlefield trigger moves counters") {
+
+            test("moves its +1/+1 counter onto a target creature you control when it leaves the battlefield") {
+                // Accursed Centaur ETB forces a sacrifice — we sacrifice the captain so it leaves
+                // and its +1/+1 counter should transfer to Glory Seeker.
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withCardInHand(1, "Selfless Police Captain")
+                    .withCardInHand(1, "Accursed Centaur")
+                    .withCardOnBattlefield(1, "Glory Seeker")
+                    .withLandsOnBattlefield(1, "Plains", 2)
+                    .withLandsOnBattlefield(1, "Swamp", 1)
+                    .withCardInLibrary(1, "Plains")
+                    .withCardInLibrary(2, "Plains")
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                // Cast captain — replacement effect gives it one +1/+1 counter
+                val castCaptainResult = game.castSpell(1, "Selfless Police Captain")
+                withClue("Casting Selfless Police Captain should succeed: ${castCaptainResult.error}") {
+                    castCaptainResult.error shouldBe null
+                }
+                game.resolveStack()
+
+                withClue("Selfless Police Captain should be on the battlefield") {
+                    game.isOnBattlefield("Selfless Police Captain") shouldBe true
+                }
+
+                // Cast Accursed Centaur — ETB trigger requires sacrificing a creature
+                val castCentaurResult = game.castSpell(1, "Accursed Centaur")
+                withClue("Casting Accursed Centaur should succeed: ${castCentaurResult.error}") {
+                    castCentaurResult.error shouldBe null
+                }
+                game.resolveStack()
+
+                // Sacrifice Selfless Police Captain to satisfy Accursed Centaur's ETB
+                val captainId = game.findPermanent("Selfless Police Captain")!!
+                game.selectCards(listOf(captainId))
+
+                // LTB trigger fires — select Glory Seeker as the counter recipient
+                val glorySeekerID = game.findPermanent("Glory Seeker")!!
+                game.selectTargets(listOf(glorySeekerID))
+
+                game.resolveStack()
+
+                withClue("Selfless Police Captain should no longer be on the battlefield") {
+                    game.isOnBattlefield("Selfless Police Captain") shouldBe false
+                }
+
+                val counters = game.state.getEntity(glorySeekerID)?.get<CountersComponent>()
+                withClue("Glory Seeker should have received exactly one +1/+1 counter") {
+                    counters shouldNotBe null
+                    counters!!.getCount(CounterType.PLUS_ONE_PLUS_ONE) shouldBe 1
+                }
+
+                val projected = game.state.projectedState
+                withClue("Glory Seeker's effective power should be 3 (base 2 + 1 from counter)") {
+                    projected.getPower(glorySeekerID) shouldBe 3
+                }
+                withClue("Glory Seeker's effective toughness should be 3 (base 2 + 1 from counter)") {
+                    projected.getToughness(glorySeekerID) shouldBe 3
+                }
+            }
+        }
     }
 }
