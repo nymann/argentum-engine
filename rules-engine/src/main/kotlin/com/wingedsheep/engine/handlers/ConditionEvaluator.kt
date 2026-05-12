@@ -72,6 +72,7 @@ import com.wingedsheep.sdk.scripting.conditions.BlightWasPaid
 import com.wingedsheep.sdk.scripting.conditions.YouControlSource
 import com.wingedsheep.sdk.scripting.conditions.YouAttackedWithCreaturesThisTurn
 import com.wingedsheep.sdk.scripting.conditions.YouCastSpellsThisTurn
+import com.wingedsheep.sdk.scripting.conditions.YouCastASpellWithManaValueNOrGreaterThisTurn
 import com.wingedsheep.sdk.scripting.conditions.YouWereAttackedThisStep
 import com.wingedsheep.sdk.scripting.conditions.VoidCondition
 
@@ -137,6 +138,7 @@ class ConditionEvaluator {
             is YouWereAttackedThisStep -> evaluateYouWereAttackedThisStep(state, context)
             is IsFirstSpellOfTypeCastThisTurn -> evaluateFirstSpellOfType(state, condition, context)
             is YouCastSpellsThisTurn -> evaluateYouCastSpellsThisTurn(state, condition, context)
+            is YouCastASpellWithManaValueNOrGreaterThisTurn -> evaluateYouCastASpellWithManaValueNOrGreater(state, condition, context)
             is SourceAbilityResolvedNTimesThisTurn -> evaluateSourceAbilityResolvedNTimes(state, condition, context)
 
             // Void (Edge of Eternities ability word)
@@ -574,6 +576,15 @@ class ConditionEvaluator {
             }
         }
         return false
+    }
+
+    private fun evaluateYouCastASpellWithManaValueNOrGreater(
+        state: GameState,
+        condition: YouCastASpellWithManaValueNOrGreaterThisTurn,
+        context: EffectContext
+    ): Boolean {
+        val records = state.spellsCastThisTurnByPlayer[context.controllerId] ?: return false
+        return records.any { it.manaValue >= condition.threshold }
     }
 
     private fun evaluateSourceAbilityResolvedNTimes(
