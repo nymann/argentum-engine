@@ -19,6 +19,39 @@ class ShockScenarioTest : ScenarioTestBase() {
     init {
         context("Shock — deals 2 damage to any target") {
 
+            test("deals 2 damage to target player, reducing their life total from 20 to 18") {
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withCardInHand(1, "Shock")
+                    .withLandsOnBattlefield(1, "Mountain", 1)
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val castResult = game.castSpellTargetingPlayer(1, "Shock", 2)
+                withClue("Casting Shock targeting opponent should succeed: ${castResult.error}") {
+                    castResult.error shouldBe null
+                }
+
+                game.resolveStack()
+
+                withClue("Opponent's life total should be 18 (20 - 2)") {
+                    game.getLifeTotal(2) shouldBe 18
+                }
+                withClue("Shock should be in the caster's graveyard after resolution") {
+                    game.isInGraveyard(1, "Shock") shouldBe true
+                }
+                withClue("Active player's mana pool should be empty after casting") {
+                    val manaPool = game.state.getEntity(game.player1Id)?.get<ManaPoolComponent>()
+                    manaPool?.red shouldBe 0
+                    manaPool?.blue shouldBe 0
+                    manaPool?.black shouldBe 0
+                    manaPool?.green shouldBe 0
+                    manaPool?.white shouldBe 0
+                    manaPool?.colorless shouldBe 0
+                }
+            }
+
             test("deals 2 damage to target creature, killing a 2/2 and going to graveyard") {
                 val game = scenario()
                     .withPlayers("Caster", "Opponent")
