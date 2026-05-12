@@ -15,7 +15,7 @@ import io.kotest.matchers.shouldBe
  * - Amazing Acrobatics ({1}{U}{U}): Instant
  *   "Choose one or both —
  *    • Counter target spell.
- *    • Tap up to two target creatures."
+ *    • Tap one or two target creatures."
  */
 class AmazingAcrobaticsScenarioTest : ScenarioTestBase() {
 
@@ -161,7 +161,7 @@ class AmazingAcrobaticsScenarioTest : ScenarioTestBase() {
                     game.state.getEntity(entityId)?.get<CardComponent>()?.name == "Amazing Acrobatics"
                 }!!
 
-                // Cast Amazing Acrobatics choosing only the 'Tap up to two target creatures' mode (mode index 1)
+                // Cast Amazing Acrobatics choosing only the 'Tap one or two target creatures' mode (mode index 1)
                 val result = game.execute(
                     CastSpell(
                         playerId = game.player1Id,
@@ -228,6 +228,39 @@ class AmazingAcrobaticsScenarioTest : ScenarioTestBase() {
                 }
                 withClue("Glory Seeker should remain untapped") {
                     game.state.getEntity(seekerId)?.get<TappedComponent>() shouldBe null
+                }
+            }
+
+            test("cannot cast tap mode with zero targets (minCount=1 enforced)") {
+                // No creatures on the battlefield — tap mode requires at least one
+                // legal target per the 'one or two target creatures' wording.
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withActivePlayer(1)
+                    .withCardInHand(1, "Amazing Acrobatics")
+                    .withLandsOnBattlefield(1, "Island", 3)
+                    .withCardInLibrary(1, "Island")
+                    .withCardInLibrary(2, "Island")
+                    .inPhase(com.wingedsheep.sdk.core.Phase.PRECOMBAT_MAIN, com.wingedsheep.sdk.core.Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val acrobaticsId = game.state.getHand(game.player1Id).find { entityId ->
+                    game.state.getEntity(entityId)?.get<CardComponent>()?.name == "Amazing Acrobatics"
+                }!!
+
+                // Attempt to cast tap mode with zero targets — should fail per rule 601.2c
+                // because the mode's target requirement has minCount=1.
+                val result = game.execute(
+                    CastSpell(
+                        playerId = game.player1Id,
+                        cardId = acrobaticsId,
+                        targets = emptyList(),
+                        chosenModes = listOf(1),
+                        modeTargetsOrdered = listOf(emptyList())
+                    )
+                )
+                withClue("Casting Amazing Acrobatics tap mode with zero targets should fail") {
+                    result.isSuccess shouldBe false
                 }
             }
         }
