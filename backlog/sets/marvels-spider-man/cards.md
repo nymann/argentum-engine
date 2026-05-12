@@ -2,7 +2,7 @@
 
 **Set Size:** 188 booster cards (excluding basic lands and tokens)
 **Release Date:** September 26, 2025
-**Implemented:** 0 / 188
+**Implemented:** 1 / 188
 ---
 
 - [ ] Agent Venom
@@ -42,7 +42,7 @@
 - [ ] Friendly Neighborhood
 - [ ] Gallant Citizen
 - [ ] Green Goblin, Revenant
-- [ ] Grow Extra Arms
+- [x] Grow Extra Arms
 - [ ] Guy in the Chair
 - [ ] Gwen Stacy // Ghost-Spider
 - [ ] Gwenom, Remorseless
