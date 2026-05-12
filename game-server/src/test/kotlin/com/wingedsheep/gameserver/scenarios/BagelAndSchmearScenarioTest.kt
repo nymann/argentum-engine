@@ -1,6 +1,8 @@
 package com.wingedsheep.gameserver.scenarios
 
+import com.wingedsheep.engine.core.ActivateAbility
 import com.wingedsheep.engine.state.components.identity.CardComponent
+import com.wingedsheep.engine.state.components.stack.ChosenTarget
 import com.wingedsheep.gameserver.ScenarioTestBase
 import com.wingedsheep.sdk.core.Phase
 import com.wingedsheep.sdk.core.Step
@@ -60,6 +62,49 @@ class BagelAndSchmearScenarioTest : ScenarioTestBase() {
 
                 withClue("Mana cost should be {1} (converted mana cost 1)") {
                     card?.manaValue shouldBe 1
+                }
+            }
+        }
+
+        context("Share ability") {
+
+            test("activating Share sacrifices the artifact, puts a +1/+1 counter on the target creature, and draws a card") {
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withCardOnBattlefield(1, "Bagel and Schmear")
+                    .withCardOnBattlefield(1, "Glory Seeker")
+                    .withLandsOnBattlefield(1, "Plains", 1)
+                    .withCardInLibrary(1, "Plains")
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val bagelId = game.findPermanent("Bagel and Schmear")!!
+                val creatureId = game.findPermanent("Glory Seeker")!!
+                val shareAbility = cardRegistry.getCard("Bagel and Schmear")!!.script.activatedAbilities[0]
+                val initialHandSize = game.handSize(1)
+
+                val activateResult = game.execute(
+                    ActivateAbility(
+                        playerId = game.player1Id,
+                        sourceId = bagelId,
+                        abilityId = shareAbility.id,
+                        targets = listOf(ChosenTarget.Permanent(creatureId))
+                    )
+                )
+                withClue("Share ability should activate successfully: ${activateResult.error}") {
+                    activateResult.error shouldBe null
+                }
+                game.resolveStack()
+
+                withClue("Bagel and Schmear should be in the graveyard (sacrificed as cost)") {
+                    game.isInGraveyard(1, "Bagel and Schmear") shouldBe true
+                }
+                withClue("Glory Seeker should still be on the battlefield with a +1/+1 counter") {
+                    game.isOnBattlefield("Glory Seeker") shouldBe true
+                }
+                withClue("Active player should have drawn one card") {
+                    game.handSize(1) shouldBe initialHandSize + 1
                 }
             }
         }
