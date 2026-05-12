@@ -51,15 +51,15 @@ class BagelAndSchmearScenarioTest : ScenarioTestBase() {
                 val card = permanentId?.let { game.state.getEntity(it)?.get<CardComponent>() }
 
                 withClue("Type line should be 'Artifact — Food'") {
-                    card?.typeLine shouldBe "Artifact — Food"
+                    card?.typeLine?.toString() shouldBe "Artifact — Food"
                 }
 
                 withClue("Bagel and Schmear should be colorless (no colors)") {
-                    card?.colors shouldBe emptySet()
+                    card?.colors?.isEmpty() shouldBe true
                 }
 
                 withClue("Mana cost should be {1} (converted mana cost 1)") {
-                    card?.manaCost shouldBe "{1}"
+                    card?.manaValue shouldBe 1
                 }
             }
         }
