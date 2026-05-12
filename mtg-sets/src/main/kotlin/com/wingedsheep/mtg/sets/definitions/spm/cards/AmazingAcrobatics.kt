@@ -8,6 +8,7 @@ import com.wingedsheep.sdk.scripting.effects.ForEachTargetEffect
 import com.wingedsheep.sdk.scripting.effects.Mode
 import com.wingedsheep.sdk.scripting.effects.ModalEffect
 import com.wingedsheep.sdk.scripting.targets.EffectTarget
+import com.wingedsheep.sdk.scripting.targets.TargetCreature
 
 /**
  * Amazing Acrobatics
@@ -15,13 +16,13 @@ import com.wingedsheep.sdk.scripting.targets.EffectTarget
  * Instant
  * Choose one or both —
  * • Counter target spell.
- * • Tap up to two target creatures.
+ * • Tap one or two target creatures.
  */
 val AmazingAcrobatics = card("Amazing Acrobatics") {
     manaCost = "{1}{U}{U}"
     colorIdentity = "U"
     typeLine = "Instant"
-    oracleText = "Choose one or both —\n• Counter target spell.\n• Tap up to two target creatures."
+    oracleText = "Choose one or both —\n• Counter target spell.\n• Tap one or two target creatures."
 
     spell {
         effect = ModalEffect(
@@ -33,8 +34,8 @@ val AmazingAcrobatics = card("Amazing Acrobatics") {
                 ),
                 Mode.withTarget(
                     effect = ForEachTargetEffect(listOf(Effects.Tap(EffectTarget.ContextTarget(0)))),
-                    target = Targets.UpToCreatures(2),
-                    description = "Tap up to two target creatures."
+                    target = TargetCreature(count = 2, minCount = 1),
+                    description = "Tap one or two target creatures."
                 )
             ),
             chooseCount = 2,
@@ -44,8 +45,9 @@ val AmazingAcrobatics = card("Amazing Acrobatics") {
 
     metadata {
         rarity = Rarity.UNCOMMON
-        collectorNumber = "1"
-        artist = "Unknown"
-        imageUri = ""
+        collectorNumber = "25"
+        artist = "Justyna Dura"
+        flavorText = "\"Hey, who added these deadly laser beams? Rude.\""
+        imageUri = "https://cards.scryfall.io/normal/front/9/a/9a2f6d84-3d83-4f48-9906-11f681171930.jpg?1757376894"
     }
 }
