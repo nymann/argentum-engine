@@ -2,7 +2,7 @@
 
 **Set Size:** 188 booster cards (excluding basic lands and tokens)
 **Release Date:** September 26, 2025
-**Implemented:** 0 / 188
+**Implemented:** 1 / 188
 ---
 
 - [ ] Agent Venom
@@ -35,7 +35,7 @@
 - [ ] Eddie Brock // Venom, Lethal Protector
 - [ ] Eerie Gravestone
 - [ ] Electro's Bolt
-- [ ] Electro, Assaulting Battery
+- [x] Electro, Assaulting Battery
 - [ ] Ezekiel Sims, Spider-Totem
 - [ ] Flash Thompson, Spider-Fan
 - [ ] Flying Octobot
