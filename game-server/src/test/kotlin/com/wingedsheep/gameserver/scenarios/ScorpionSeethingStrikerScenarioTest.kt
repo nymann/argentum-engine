@@ -1,6 +1,7 @@
 package com.wingedsheep.gameserver.scenarios
 
 import com.wingedsheep.engine.mechanics.layers.StateProjector
+import com.wingedsheep.engine.state.components.player.CreaturesDiedThisTurnComponent
 import com.wingedsheep.gameserver.ScenarioTestBase
 import com.wingedsheep.sdk.core.Keyword
 import com.wingedsheep.sdk.core.Phase
@@ -17,6 +18,8 @@ import io.kotest.matchers.shouldBe
  * Card reference:
  * - Scorpion, Seething Striker ({3}{B}): Legendary Creature — Scorpion Human Villain, 3/3
  *   "Deathtouch"
+ *   "At the beginning of your end step, if a creature died this turn, target creature
+ *    you control connives."
  *   Uncommon, collector number 64, artist Simon Dominic
  */
 class ScorpionSeethingStrikerScenarioTest : ScenarioTestBase() {
@@ -76,6 +79,66 @@ class ScorpionSeethingStrikerScenarioTest : ScenarioTestBase() {
                     card.subtypes shouldContain "Scorpion"
                     card.subtypes shouldContain "Human"
                     card.subtypes shouldContain "Villain"
+                }
+            }
+        }
+
+        context("Scorpion, Seething Striker — end-step connive trigger") {
+
+            test("end-step trigger fires if a creature died this turn and connive grants +1/+1 counter on nonland discard") {
+                // Glory Seeker (2/2) is the connive target.
+                // Grizzly Bears in hand will be discarded as a nonland, granting a +1/+1 counter.
+                // Forest on top of library will be drawn by connive.
+                val game = scenario()
+                    .withPlayers("Active", "Opponent")
+                    .withCardOnBattlefield(1, "Scorpion, Seething Striker")
+                    .withCardOnBattlefield(1, "Glory Seeker")
+                    .withCardInHand(1, "Grizzly Bears")
+                    .withCardInLibrary(1, "Forest")
+                    .withCardInLibrary(1, "Island")
+                    .withCardInLibrary(2, "Island")
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                // Simulate a creature having died earlier this turn (e.g., killed by a spell).
+                game.state = game.state.updateEntity(game.player1Id) { container ->
+                    container.with(CreaturesDiedThisTurnComponent(count = 1))
+                }
+
+                val glorySeekerIdBefore = game.findPermanent("Glory Seeker")!!
+                val initialHandSize = game.handSize(1)
+
+                // Advance to the end step — the intervening-if condition is true so the
+                // triggered ability should fire and pause for target selection.
+                game.passUntilPhase(Phase.ENDING, Step.END)
+
+                withClue("triggered ability should be awaiting target selection at end step") {
+                    game.hasPendingDecision() shouldBe true
+                }
+
+                // Select Glory Seeker as the connive target.
+                game.selectTargets(listOf(glorySeekerIdBefore))
+
+                // Ability resolves: draws one card then pauses for discard.
+                game.resolveStack()
+
+                withClue("connive draw: hand should have grown by one before discard") {
+                    game.handSize(1) shouldBe initialHandSize + 1
+                }
+                withClue("connive discard: should be awaiting discard selection") {
+                    game.hasPendingDecision() shouldBe true
+                }
+
+                // Discard Grizzly Bears (nonland) — Glory Seeker should gain a +1/+1 counter.
+                val nonlandToDiscard = game.findCardsInHand(1, "Grizzly Bears").first()
+                game.selectCards(listOf(nonlandToDiscard))
+                game.resolveStack()
+
+                val projected = stateProjector.project(game.state)
+                withClue("Glory Seeker should be 3/3 after +1/+1 counter from nonland discard") {
+                    projected.getPower(glorySeekerIdBefore) shouldBe 3
+                    projected.getToughness(glorySeekerIdBefore) shouldBe 3
                 }
             }
         }
