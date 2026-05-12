@@ -17,7 +17,7 @@ val RomanticRendezvous = card("Romantic Rendezvous") {
     oracleText = "Discard a card, then draw two cards."
 
     spell {
-        effect = Effects.Discard then Effects.DrawCards(2)
+        effect = Effects.Discard() then Effects.DrawCards(2)
     }
 
     metadata {
