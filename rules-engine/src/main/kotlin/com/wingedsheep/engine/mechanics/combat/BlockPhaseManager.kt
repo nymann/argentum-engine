@@ -23,6 +23,7 @@ import com.wingedsheep.sdk.core.ManaSymbol
 import com.wingedsheep.sdk.model.EntityId
 import com.wingedsheep.engine.handlers.ConditionEvaluator
 import com.wingedsheep.engine.handlers.EffectContext
+import com.wingedsheep.engine.handlers.blocking.CanTBeBlockedByMoreThanOneCreatureRestriction
 import com.wingedsheep.sdk.scripting.CanBlockAnyNumber
 import com.wingedsheep.sdk.scripting.CantBeBlockedByMoreThan
 import com.wingedsheep.sdk.scripting.CantBlock
@@ -453,6 +454,10 @@ internal class BlockPhaseManager(
             val attackerContainer = state.getEntity(attackerId) ?: continue
             if (attackerContainer.has<FaceDownComponent>()) continue
             val attackerCard = attackerContainer.get<CardComponent>() ?: continue
+
+            val componentError = CanTBeBlockedByMoreThanOneCreatureRestriction.check(attackerContainer, attackerCard.name, count)
+            if (componentError != null) return componentError
+
             val cardDef = cardRegistry.getCard(attackerCard.cardDefinitionId) ?: continue
 
             val limit = cardDef.staticAbilities
