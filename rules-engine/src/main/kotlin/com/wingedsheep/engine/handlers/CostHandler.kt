@@ -766,6 +766,16 @@ class CostHandler(
                 }
                 total >= cost.totalCount
             }
+            is AdditionalCost.ReturnTappedCreatureToHand -> {
+                val projected = state.projectedState
+                val predicateContext = PredicateContext(controllerId = controllerId)
+                val tappedMatching = state.getBattlefield().filter { permId ->
+                    projected.getController(permId) == controllerId &&
+                        state.getEntity(permId)?.has<TappedComponent>() == true &&
+                        predicateEvaluator.matchesWithProjection(state, projected, permId, cost.filter, predicateContext)
+                }
+                tappedMatching.size >= cost.count
+            }
             is AdditionalCost.Composite -> {
                 // All steps must be payable
                 cost.steps.all { canPayAdditionalCost(state, it, controllerId) }

@@ -83,6 +83,7 @@ import com.wingedsheep.sdk.scripting.predicates.CardPredicate
 import com.wingedsheep.sdk.core.Keyword
 
 import com.wingedsheep.engine.handlers.cast.CastFromGraveyardWithAdditionalDiscardCostHandler
+import com.wingedsheep.engine.handlers.alternativecosts.WebSlingingHandler
 import com.wingedsheep.engine.handlers.effects.TargetResolutionUtils.toEntityId
 import com.wingedsheep.engine.state.components.player.GrantedSpellKeywordsComponent
 import com.wingedsheep.engine.state.components.stack.ChosenTarget
@@ -123,6 +124,7 @@ class CastSpellHandler(
     private val paymentProcessor = CastPaymentProcessor(manaSolver, costHandler, manaAbilitySideEffectExecutor)
     private val grantedKeywordResolver = com.wingedsheep.engine.mechanics.mana.GrantedKeywordResolver(cardRegistry)
     private val graveyardDiscardCostHandler = CastFromGraveyardWithAdditionalDiscardCostHandler(cardRegistry)
+    private val webSlingingHandler = WebSlingingHandler()
 
     override fun validate(state: GameState, action: CastSpell): String? {
         if (state.priorityPlayerId != action.playerId) {
@@ -1105,6 +1107,10 @@ class CastSpellHandler(
                         }
                     }
                 }
+                is AdditionalCost.ReturnTappedCreatureToHand -> {
+                    val error = webSlingingHandler.validateBounceCost(state, additionalCost, action)
+                    if (error != null) return error
+                }
                 else -> {}
             }
         }
@@ -1601,6 +1607,12 @@ class CastSpellHandler(
                                 entityName = entityName
                             ))
                         }
+                    }
+                    is AdditionalCost.ReturnTappedCreatureToHand -> {
+                        val bouncedPermanents = action.additionalCostPayment?.bouncedPermanents ?: emptyList()
+                        val (newState, bounceEvents) = webSlingingHandler.executeBounce(currentState, bouncedPermanents)
+                        currentState = newState
+                        events.addAll(bounceEvents)
                     }
                     else -> {}
                 }

@@ -359,3 +359,17 @@ sealed interface CostReductionSource {
             "$amount if a nonland permanent left the battlefield this turn or a spell was warped this turn"
     }
 }
+
+/**
+ * Static ability that taxes spells whose card type matches the type recorded on this permanent
+ * via [com.wingedsheep.engine.state.components.identity.ChosenCardTypeComponent].
+ * When any player casts a spell of the chosen type, that player pays an extra {1}.
+ *
+ * Handled by SpellsOfTheChosenTypeCost1MoreToCastHandler in the rules-engine.
+ */
+@SerialName("SpellsOfChosenTypeCost1MoreToCast")
+@Serializable
+data object SpellsOfChosenTypeCost1MoreToCast : StaticAbility {
+    override val description: String = "Spells of the chosen type cost {1} more to cast"
+    override fun applyTextReplacement(replacer: TextReplacer): StaticAbility = this
+}

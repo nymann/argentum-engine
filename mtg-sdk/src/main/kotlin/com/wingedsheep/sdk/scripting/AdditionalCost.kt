@@ -413,6 +413,37 @@ sealed interface AdditionalCost : TextReplaceable<AdditionalCost> {
             return if (newFilter !== filter) copy(filter = newFilter) else this
         }
     }
+
+    /**
+     * Return a tapped permanent matching [filter] that the caster controls to its owner's hand.
+     * Used by the Web-slinging alternative-cost keyword.
+     *
+     * @property count Number of tapped permanents to return
+     * @property filter Which permanents can be returned (default: any creature)
+     */
+    @SerialName("ReturnTappedCreatureToHand")
+    @Serializable
+    data class ReturnTappedCreatureToHand(
+        val count: Int = 1,
+        val filter: GameObjectFilter = GameObjectFilter.Creature
+    ) : AdditionalCost {
+        override val description: String = buildString {
+            append("Return ")
+            if (count == 1) {
+                append("a tapped ")
+            } else {
+                append("$count tapped ")
+            }
+            append(filter.description)
+            if (count != 1) append("s")
+            append(" you control to its owner's hand")
+        }
+
+        override fun applyTextReplacement(replacer: TextReplacer): AdditionalCost {
+            val newFilter = filter.applyTextReplacement(replacer)
+            return if (newFilter !== filter) copy(filter = newFilter) else this
+        }
+    }
 }
 
 /**
