@@ -82,9 +82,9 @@ class AngryRabbleScenarioTest : ScenarioTestBase() {
             }
         }
 
-        context("Angry Rabble trigger — cast-spell with mana value 4+") {
+        context("Angry Rabble trigger — cast-spell with mana value 4+ (2-player coverage; trigger fires for any player)") {
 
-            test("deals 1 damage to opponent when a spell with mana value 4 or greater is cast") {
+            test("deals 1 damage to the opponent when the controller casts a spell with mana value 4 or greater") {
                 val game = scenario()
                     .withPlayers("Caster", "Opponent")
                     .withCardOnBattlefield(1, "Angry Rabble")
@@ -102,6 +102,30 @@ class AngryRabbleScenarioTest : ScenarioTestBase() {
 
                 withClue("Opponent should be at 19 life after Angry Rabble's trigger") {
                     game.getLifeTotal(2) shouldBe 19
+                }
+            }
+
+            test("triggers when the opponent casts a spell with mana value 4 or greater — dealing 1 damage to the opponent") {
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withCardOnBattlefield(1, "Angry Rabble")
+                    .withCardInHand(2, "Fire Elemental")      // {3}{R}{R}, MV 5 — cast by the opponent
+                    .withLandsOnBattlefield(2, "Mountain", 5)
+                    .withActivePlayer(2)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val castResult = game.castSpell(2, "Fire Elemental")
+                withClue("Opponent casting Fire Elemental should succeed: ${castResult.error}") {
+                    castResult.error shouldBe null
+                }
+                game.resolveStack()
+
+                withClue("Trigger uses Player.Each, so the opponent casting still fires it — opponent should take 1 damage") {
+                    game.getLifeTotal(2) shouldBe 19
+                }
+                withClue("Angry Rabble's controller is not an opponent of itself and should remain at 20 life") {
+                    game.getLifeTotal(1) shouldBe 20
                 }
             }
 
