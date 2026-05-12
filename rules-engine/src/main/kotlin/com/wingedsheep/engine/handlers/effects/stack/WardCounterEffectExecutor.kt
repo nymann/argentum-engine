@@ -11,7 +11,7 @@ import com.wingedsheep.engine.core.SelectManaSourcesDecision
 import com.wingedsheep.engine.core.YesNoDecision
 import com.wingedsheep.engine.handlers.EffectContext
 import com.wingedsheep.engine.handlers.effects.EffectExecutor
-import com.wingedsheep.engine.handlers.effects.drawing.ReadTheRunesExecutor
+import com.wingedsheep.engine.handlers.effects.ZoneTransitionService
 import com.wingedsheep.engine.mechanics.mana.ManaSolver
 import com.wingedsheep.engine.mechanics.stack.StackResolver
 import com.wingedsheep.engine.registry.CardRegistry
@@ -203,16 +203,28 @@ class WardCounterEffectExecutor(
         payingPlayerId: EntityId,
         cost: WardCost.Discard
     ): EffectResult {
+        // Player-choice discard would need a SelectCardsDecision flow; no printed card
+        // uses that variant for Ward today, so fail loudly if anyone wires it up.
+        require(cost.random) { "non-random ward-discard not implemented" }
+
         val hand = state.getHand(payingPlayerId)
         if (hand.size < cost.count) {
             return counterSpellOrAbility(state, spellEntityId, container)
         }
-        val toDiscard = if (cost.random) hand.shuffled().take(cost.count) else hand.take(cost.count)
-        var result = EffectResult.success(state)
+
+        // Draw a seeded Random from GameState so outcomes are deterministic across
+        // replays and AI rollouts — never use unseeded Random.Default for in-game choices.
+        val (random, stateWithAdvancedRng) = state.nextRandom()
+        val toDiscard = hand.shuffled(random).take(cost.count)
+
+        var currentState = stateWithAdvancedRng
+        val events = mutableListOf<com.wingedsheep.engine.core.GameEvent>()
         for (cardId in toDiscard) {
-            result = ReadTheRunesExecutor.discardCard(result.state, payingPlayerId, cardId)
+            val transition = ZoneTransitionService.discardCard(currentState, payingPlayerId, cardId)
+            currentState = transition.state
+            events.addAll(transition.events)
         }
-        return result
+        return EffectResult.success(currentState, events)
     }
 
     private fun counterSpellOrAbility(

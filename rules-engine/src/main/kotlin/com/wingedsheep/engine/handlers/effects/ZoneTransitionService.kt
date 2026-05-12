@@ -1,5 +1,6 @@
 package com.wingedsheep.engine.handlers.effects
 
+import com.wingedsheep.engine.core.CardsDiscardedEvent
 import com.wingedsheep.engine.core.CountersAddedEvent
 import com.wingedsheep.engine.core.ZoneChangeEvent
 import com.wingedsheep.engine.core.GameEvent as EngineGameEvent
@@ -439,6 +440,45 @@ object ZoneTransitionService {
         }
 
         return ZoneTransitionResult(state = currentState, events = allEvents)
+    }
+
+    /**
+     * Discard a card from a player's hand into their graveyard.
+     *
+     * Canonical hand→graveyard transition: emits [CardsDiscardedEvent] followed by the
+     * usual [ZoneChangeEvent] so triggers ("whenever you discard a card"),
+     * animations, and last-known-info bookkeeping all observe the move.
+     *
+     * Shared by [com.wingedsheep.engine.handlers.effects.drawing.ReadTheRunesExecutor]
+     * (Read the Runes / Treacherous Vampire-style draw-and-discard) and
+     * [com.wingedsheep.engine.handlers.effects.stack.WardCounterEffectExecutor]
+     * (Ward—Discard a card). Centralising it here keeps the discard event shape
+     * consistent across mechanics.
+     */
+    fun discardCard(state: GameState, playerId: EntityId, cardId: EntityId): ZoneTransitionResult {
+        val cardName = state.getEntity(cardId)?.get<CardComponent>()?.name ?: "Unknown"
+        val handZone = ZoneKey(playerId, Zone.HAND)
+        val graveyardZone = ZoneKey(playerId, Zone.GRAVEYARD)
+
+        var newState = state.removeFromZone(handZone, cardId)
+        newState = newState.addToZone(graveyardZone, cardId)
+
+        val events = listOf(
+            CardsDiscardedEvent(playerId, listOf(cardId), listOf(cardName)),
+            ZoneChangeEvent(
+                entityId = cardId,
+                entityName = cardName,
+                fromZone = Zone.HAND,
+                toZone = Zone.GRAVEYARD,
+                ownerId = playerId
+            )
+        )
+
+        return ZoneTransitionResult(
+            state = newState,
+            events = events,
+            actualDestination = Zone.GRAVEYARD
+        )
     }
 
     /**

@@ -14,6 +14,7 @@ import com.wingedsheep.sdk.core.Zone
 import com.wingedsheep.sdk.model.EntityId
 import com.wingedsheep.sdk.scripting.effects.WardCost
 import com.wingedsheep.sdk.scripting.effects.WardCounterEffect
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -124,34 +125,29 @@ class WardCounterEffectExecutorDiscardTest : FunSpec({
         result.state.getZone(caster, Zone.GRAVEYARD) shouldContainExactlyInAnyOrder hand
     }
 
-    test("hand larger than discard cost, deterministic — discards the front of the hand") {
+    test("non-random discard is not implemented — caller fails fast") {
+        // No printed Ward—Discard variant prompts the player to choose, so the
+        // executor throws rather than silently auto-picking. If a future card needs
+        // player-chosen discard, wire a SelectCardsDecision flow and revisit.
         val caster = EntityId.generate()
         val warder = EntityId.generate()
         val spell = EntityId.generate()
-        val first = EntityId.generate()
-        val second = EntityId.generate()
-        val third = EntityId.generate()
-        val hand = listOf(first, second, third)
+        val hand = listOf(EntityId.generate(), EntityId.generate(), EntityId.generate())
         val state = stateWithHandAndSpell(caster, spell, hand)
         val effect = WardCounterEffect(WardCost.Discard(count = 2, random = false))
 
-        val result = executor.execute(state, effect, context(spell, warder))
-
-        result.isSuccess shouldBe true
-        // Spell stays on the stack — cost was paid.
-        result.state.stack shouldContainExactly listOf(spell)
-        // Deterministic path: `hand.take(count)` removes the first two entries; the third
-        // remains in hand.
-        result.state.getHand(caster) shouldContainExactly listOf(third)
-        result.state.getZone(caster, Zone.GRAVEYARD) shouldContainExactly listOf(first, second)
+        shouldThrow<IllegalArgumentException> {
+            executor.execute(state, effect, context(spell, warder))
+        }
     }
 
-    test("hand larger than discard cost, random — exactly cost.count cards move from hand to graveyard") {
+    test("hand larger than discard cost, random — discards exactly cost.count cards, seeded for determinism") {
         val caster = EntityId.generate()
         val warder = EntityId.generate()
         val spell = EntityId.generate()
         val hand = (1..4).map { EntityId.generate() }
-        val state = stateWithHandAndSpell(caster, spell, hand)
+        // Seed the in-game RNG so the shuffle is fully deterministic across runs.
+        val state = stateWithHandAndSpell(caster, spell, hand).copy(rngSeed = 12345L)
         val effect = WardCounterEffect(WardCost.Discard(count = 2, random = true))
 
         val result = executor.execute(state, effect, context(spell, warder))
@@ -159,25 +155,28 @@ class WardCounterEffectExecutorDiscardTest : FunSpec({
         result.isSuccess shouldBe true
         // Spell still on the stack.
         result.state.stack shouldContainExactly listOf(spell)
-        // Don't assert which cards: shuffle is unseeded. Assert counts and a partition.
-        val newHand = result.state.getHand(caster)
-        val newGraveyard = result.state.getZone(caster, Zone.GRAVEYARD)
-        newHand.size shouldBe (hand.size - 2)
-        newGraveyard.size shouldBe 2
-        // Every original card is now either in hand or in graveyard — none lost.
-        (newHand + newGraveyard) shouldContainExactlyInAnyOrder hand
+        // Compute the exact expected pick by reproducing GameState.nextRandom + .shuffled.
+        val (rng, _) = state.nextRandom()
+        val expectedDiscarded = hand.shuffled(rng).take(2)
+        val expectedRemaining = hand.filter { it !in expectedDiscarded }
+        result.state.getHand(caster) shouldContainExactly expectedRemaining
+        result.state.getZone(caster, Zone.GRAVEYARD) shouldContainExactly expectedDiscarded
+        // Sanity: every original card is accounted for, the rng seed advanced.
+        (result.state.getHand(caster) + result.state.getZone(caster, Zone.GRAVEYARD))
+            .shouldContainExactlyInAnyOrder(hand)
+        (result.state.rngSeed != state.rngSeed) shouldBe true
     }
 
     test("discard cost of zero — spell resolves with no discard") {
-        // WardCost.Discard(count = 0) is type-constructible (count is an unconstrained Int
-        // with default = 1). The `hand.size < cost.count` guard is false (2 < 0), and
-        // `hand.take(0)` yields an empty list, so the loop is a no-op.
+        // WardCost.Discard(count = 0, random = true) is type-constructible. The
+        // `hand.size < cost.count` guard is false (2 < 0), and `take(0)` yields an
+        // empty list, so the loop is a no-op.
         val caster = EntityId.generate()
         val warder = EntityId.generate()
         val spell = EntityId.generate()
         val hand = listOf(EntityId.generate(), EntityId.generate())
         val state = stateWithHandAndSpell(caster, spell, hand)
-        val effect = WardCounterEffect(WardCost.Discard(count = 0, random = false))
+        val effect = WardCounterEffect(WardCost.Discard(count = 0, random = true))
 
         val result = executor.execute(state, effect, context(spell, warder))
 
