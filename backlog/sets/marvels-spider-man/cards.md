@@ -2,7 +2,7 @@
 
 **Set Size:** 188 booster cards (excluding basic lands and tokens)
 **Release Date:** September 26, 2025
-**Implemented:** 0 / 188
+**Implemented:** 1 / 188
 ---
 
 - [ ] Agent Venom
@@ -22,7 +22,7 @@
 - [ ] Chameleon, Master of Disguise
 - [ ] Cheering Crowd
 - [ ] City Pigeon
-- [ ] Common Crook
+- [x] Common Crook
 - [ ] Cosmic Spider-Man
 - [ ] Costume Closet
 - [ ] Daily Bugle Building
