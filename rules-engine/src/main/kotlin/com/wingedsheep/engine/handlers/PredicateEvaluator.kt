@@ -817,8 +817,11 @@ class PredicateEvaluator {
                 entityPower >= maxPower
             }
 
-            // Rule 700.4 modified — stub; WheneverAModifiedCreatureYouControlDealsCombatDamageToAPlayerHandler implements full check
-            StatePredicate.IsModified -> false
+            // Rule 700.4 modified — delegates to the dedicated handler
+            StatePredicate.IsModified ->
+                com.wingedsheep.engine.handlers.triggers
+                    .WheneverAModifiedCreatureYouControlDealsCombatDamageToAPlayerHandler
+                    .isModified(state, entityId)
 
             // Composite / logical combinators
             is StatePredicate.Or -> predicate.predicates.any { matchesStatePredicate(state, entityId, it) }

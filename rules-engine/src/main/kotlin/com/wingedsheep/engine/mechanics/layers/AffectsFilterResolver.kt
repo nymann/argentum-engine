@@ -341,8 +341,11 @@ internal class AffectsFilterResolver {
             val counterType = parseCounterType(predicate.counterType)
             counters != null && counterType != null && counters.getCount(counterType) > 0
         }
-        // Rule 700.4 modified — stub; WheneverAModifiedCreatureYouControlDealsCombatDamageToAPlayerHandler implements full check
-        StatePredicate.IsModified -> false
+        // Rule 700.4 modified — delegates to the dedicated handler
+        StatePredicate.IsModified ->
+            com.wingedsheep.engine.handlers.triggers
+                .WheneverAModifiedCreatureYouControlDealsCombatDamageToAPlayerHandler
+                .isModified(state, entityId)
 
         is StatePredicate.Or -> predicate.predicates.any {
             matchesStatePredicateForProjection(state, entityId, it, container, isFaceDown, projectedValues)
