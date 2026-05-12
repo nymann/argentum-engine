@@ -46,11 +46,12 @@ class TemporaryPermissionToPlayExiledCardsDurationUntilEndOfYourNextTurnTest : F
         game.passPriorityUntil(Step.PRECOMBAT_MAIN)
         game.state.activePlayerId shouldBe p1
 
-        // "Until end of your next turn": in a 2-player game the next controller turn
-        // is exactly 2 turns away, so the permission covers turn N and expires after
-        // the cleanup of turn N+2.
+        // "Until end of your next turn": turnNumber increments once per round (when player1
+        // starts their turn), so the controller's next turn arrives at turnNumber + 1.
+        // expiresAfterTurn = turnNumber + 1 causes cleanupEndOfTurn to strip the component
+        // during the controller's next turn's cleanup (check: turnNumber >= expiresAfterTurn).
         val grantingTurn = game.state.turnNumber
-        val expiresAfterTurn = grantingTurn + 2
+        val expiresAfterTurn = grantingTurn + 1
 
         // ── Simulate what the handler would do: exile two cards and tag them ──
         val taggedCard1 = game.putCardInHand(p1, "Lightning Bolt")  // instant, {R}
