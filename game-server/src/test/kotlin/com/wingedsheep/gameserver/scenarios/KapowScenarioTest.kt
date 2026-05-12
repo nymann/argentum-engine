@@ -1,9 +1,11 @@
 package com.wingedsheep.gameserver.scenarios
 
 import com.wingedsheep.engine.core.CastSpell
+import com.wingedsheep.engine.state.components.battlefield.CountersComponent
 import com.wingedsheep.engine.state.components.identity.CardComponent
 import com.wingedsheep.engine.state.components.stack.ChosenTarget
 import com.wingedsheep.gameserver.ScenarioTestBase
+import com.wingedsheep.sdk.core.CounterType
 import com.wingedsheep.sdk.core.Phase
 import com.wingedsheep.sdk.core.Step
 import io.kotest.assertions.withClue
@@ -71,6 +73,76 @@ class KapowScenarioTest : ScenarioTestBase() {
                 withClue("Hill Giant should be destroyed by Grizzly Bears dealing 3 damage (counter applied)") {
                     game.isOnBattlefield("Hill Giant") shouldBe false
                     game.isInGraveyard(2, "Hill Giant") shouldBe true
+                }
+                withClue("Kapow! should be in its owner's graveyard") {
+                    game.isInGraveyard(1, "Kapow!") shouldBe true
+                }
+            }
+        }
+
+        context("Kapow! target legality on resolution") {
+
+            test("is countered when fight target gains hexproof in response leaving all targets illegal") {
+                // GIVEN active player has Kapow! in hand, controls Grizzly Bears (2/2);
+                // opponent controls Hill Giant (3/3) and has Blossoming Defense in hand with {G}
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withCardInHand(1, "Kapow!")
+                    .withCardOnBattlefield(1, "Grizzly Bears")  // ally: 2/2
+                    .withCardOnBattlefield(2, "Hill Giant")     // foe: 3/3
+                    .withLandsOnBattlefield(1, "Forest", 3)
+                    .withCardInHand(2, "Blossoming Defense")
+                    .withLandsOnBattlefield(2, "Forest", 1)
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val allyId = game.findPermanent("Grizzly Bears")!!
+                val foeId = game.findPermanent("Hill Giant")!!
+
+                // WHEN active player casts Kapow! targeting Grizzly Bears and Hill Giant
+                val playerId = game.player1Id
+                val cardId = game.state.getHand(playerId).find { entityId ->
+                    game.state.getEntity(entityId)?.get<CardComponent>()?.name == "Kapow!"
+                }!!
+
+                val castResult = game.execute(
+                    CastSpell(
+                        playerId = playerId,
+                        cardId = cardId,
+                        targets = listOf(
+                            ChosenTarget.Permanent(allyId),
+                            ChosenTarget.Permanent(foeId)
+                        )
+                    )
+                )
+                withClue("Casting Kapow! should succeed: ${castResult.error}") {
+                    castResult.error shouldBe null
+                }
+
+                // Opponent responds: passes priority back to them, then casts Blossoming Defense
+                // giving Hill Giant hexproof — making it an illegal target for Kapow! on resolution
+                game.passPriority()
+                val defenseResult = game.castSpell(2, "Blossoming Defense", foeId)
+                withClue("Blossoming Defense should be castable in response: ${defenseResult.error}") {
+                    defenseResult.error shouldBe null
+                }
+
+                // Stack resolves LIFO: Blossoming Defense first (Hill Giant gets hexproof),
+                // then Kapow! tries to resolve but Hill Giant is now an illegal target
+                game.resolveStack()
+
+                // THEN Kapow! is countered — no counter placed, no fight, both creatures survive
+                withClue("Grizzly Bears should still be on the battlefield (no fight occurred)") {
+                    game.isOnBattlefield("Grizzly Bears") shouldBe true
+                }
+                val allyCounters = game.state.getEntity(allyId)?.get<CountersComponent>()
+                val counterCount = allyCounters?.getCount(CounterType.PLUS_ONE_PLUS_ONE) ?: 0
+                withClue("Grizzly Bears should have no +1/+1 counter (Kapow! was countered on resolution)") {
+                    counterCount shouldBe 0
+                }
+                withClue("Hill Giant should still be on the battlefield (no fight occurred)") {
+                    game.isOnBattlefield("Hill Giant") shouldBe true
                 }
                 withClue("Kapow! should be in its owner's graveyard") {
                     game.isInGraveyard(1, "Kapow!") shouldBe true
