@@ -108,5 +108,46 @@ class BagelAndSchmearScenarioTest : ScenarioTestBase() {
                 }
             }
         }
+
+        context("Nosh ability") {
+
+            test("activating Nosh sacrifices the artifact, gains 3 life, and draws a card") {
+                val game = scenario()
+                    .withPlayers("Caster", "Opponent")
+                    .withCardOnBattlefield(1, "Bagel and Schmear")
+                    .withLandsOnBattlefield(1, "Plains", 2)
+                    .withCardInLibrary(1, "Plains")
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                val bagelId = game.findPermanent("Bagel and Schmear")!!
+                val noshAbility = cardRegistry.getCard("Bagel and Schmear")!!.script.activatedAbilities[1]
+                val initialHandSize = game.handSize(1)
+                val initialLife = game.getLifeTotal(1)
+
+                val activateResult = game.execute(
+                    ActivateAbility(
+                        playerId = game.player1Id,
+                        sourceId = bagelId,
+                        abilityId = noshAbility.id
+                    )
+                )
+                withClue("Nosh ability should activate successfully: ${activateResult.error}") {
+                    activateResult.error shouldBe null
+                }
+                game.resolveStack()
+
+                withClue("Bagel and Schmear should be in the graveyard (sacrificed as cost)") {
+                    game.isInGraveyard(1, "Bagel and Schmear") shouldBe true
+                }
+                withClue("Active player should gain 3 life") {
+                    game.getLifeTotal(1) shouldBe initialLife + 3
+                }
+                withClue("Active player should have drawn one card") {
+                    game.handSize(1) shouldBe initialHandSize + 1
+                }
+            }
+        }
     }
 }
