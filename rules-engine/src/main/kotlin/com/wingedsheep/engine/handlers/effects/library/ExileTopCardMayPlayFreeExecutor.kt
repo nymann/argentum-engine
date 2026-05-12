@@ -89,7 +89,7 @@ class GrantMayPlayFromExileExecutor : EffectExecutor<GrantMayPlayFromExileEffect
             state.turnNumber
         } else {
             val turnsUntilNext = if (onControllerTurn) {
-                playerCount
+                1
             } else {
                 (playerIndex - activeIndex + playerCount) % playerCount
             }
