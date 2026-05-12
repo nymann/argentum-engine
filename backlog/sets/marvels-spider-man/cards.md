@@ -2,7 +2,7 @@
 
 **Set Size:** 188 booster cards (excluding basic lands and tokens)
 **Release Date:** September 26, 2025
-**Implemented:** 4 / 188
+**Implemented:** 5 / 188
 ---
 
 - [x] Agent Venom
@@ -118,7 +118,7 @@
 - [ ] Secret Identity
 - [ ] Selfless Police Captain
 - [ ] Shadow of the Goblin
-- [ ] Shock
+- [x] Shock
 - [ ] Shocker, Unshakable
 - [ ] Shriek, Treblemaker
 - [ ] Silk, Web Weaver
