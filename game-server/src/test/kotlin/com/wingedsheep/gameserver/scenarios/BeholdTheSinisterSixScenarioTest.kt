@@ -22,8 +22,8 @@ class BeholdTheSinisterSixScenarioTest : ScenarioTestBase() {
                     "Fire Elemental",
                     "Glory Seeker",
                     "Grizzly Bears",
-                    "Llanowar Elves",
-                    "Drudge Skeletons",
+                    "Jungle Lion",
+                    "Hill Giant",
                 )
 
                 val game = scenario()
@@ -33,8 +33,8 @@ class BeholdTheSinisterSixScenarioTest : ScenarioTestBase() {
                     .withCardInGraveyard(1, "Fire Elemental")
                     .withCardInGraveyard(1, "Glory Seeker")
                     .withCardInGraveyard(1, "Grizzly Bears")
-                    .withCardInGraveyard(1, "Llanowar Elves")
-                    .withCardInGraveyard(1, "Drudge Skeletons")
+                    .withCardInGraveyard(1, "Jungle Lion")
+                    .withCardInGraveyard(1, "Hill Giant")
                     .withLandsOnBattlefield(1, "Swamp", 7)
                     .withLibraryCards(1, "Island", 5)
                     .withLibraryCards(2, "Island", 5)
@@ -49,6 +49,7 @@ class BeholdTheSinisterSixScenarioTest : ScenarioTestBase() {
                     castResult.error shouldBe null
                 }
 
+                game.resolveStack()
                 game.selectCards(targetIds)
                 game.resolveStack()
 
@@ -60,7 +61,7 @@ class BeholdTheSinisterSixScenarioTest : ScenarioTestBase() {
                 withClue("Behold the Sinister Six! should be in the caster's graveyard after resolution") {
                     game.isInGraveyard(1, "Behold the Sinister Six!") shouldBe true
                 }
-                withClue("Caster's graveyard should contain only Behold the Sinister Six! (the six creatures left)") {
+                withClue("Caster's graveyard should contain only Behold the Sinister Six! (the six creatures moved to battlefield)") {
                     game.graveyardSize(1) shouldBe 1
                 }
             }
