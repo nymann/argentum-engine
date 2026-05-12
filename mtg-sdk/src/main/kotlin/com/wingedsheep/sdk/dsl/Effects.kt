@@ -1029,7 +1029,8 @@ object Effects {
         attacking: Boolean = false,
         triggeredAbilities: List<TriggeredAbility> = emptyList(),
         addedKeywords: Set<com.wingedsheep.sdk.core.Keyword> = emptySet(),
-        addedSupertypes: Set<com.wingedsheep.sdk.core.Supertype> = emptySet()
+        addedSupertypes: Set<com.wingedsheep.sdk.core.Supertype> = emptySet(),
+        removeLegendary: Boolean = false
     ): Effect = CreateTokenCopyOfTargetEffect(
         target = target,
         count = DynamicAmount.Fixed(count),
@@ -1039,7 +1040,8 @@ object Effects {
         attacking = attacking,
         triggeredAbilities = triggeredAbilities,
         addedKeywords = addedKeywords,
-        addedSupertypes = addedSupertypes
+        addedSupertypes = addedSupertypes,
+        removeLegendary = removeLegendary
     )
 
     /**
