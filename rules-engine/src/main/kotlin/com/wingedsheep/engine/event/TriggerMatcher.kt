@@ -142,7 +142,8 @@ class TriggerMatcher(
                     matchesPlayer(trigger.player, event.casterId, controllerId) &&
                     matchesSpellFilter(trigger.spellFilter, event, state, sourceId) &&
                     (trigger.kicked == null || trigger.kicked == event.wasKicked) &&
-                    matchesCastFromZone(trigger.castFromZone, event, state)
+                    matchesCastFromZone(trigger.castFromZone, event, state) &&
+                    matchesCastFromZoneOtherThan(trigger.castFromZoneOtherThan, event, state)
             }
             is GameEvent.NthSpellCastEvent -> {
                 // Fires on SpellCastEvent when the casting player's per-turn spell count
@@ -792,6 +793,16 @@ class TriggerMatcher(
         if (requiredZone == null) return true
         val spellComponent = state.getEntity(event.spellEntityId)?.get<SpellOnStackComponent>() ?: return false
         return spellComponent.castFromZone == requiredZone
+    }
+
+    private fun matchesCastFromZoneOtherThan(
+        excludedZone: Zone?,
+        event: SpellCastEvent,
+        state: GameState
+    ): Boolean {
+        if (excludedZone == null) return true
+        val spellComponent = state.getEntity(event.spellEntityId)?.get<SpellOnStackComponent>() ?: return false
+        return spellComponent.castFromZone != excludedZone
     }
 
     /**

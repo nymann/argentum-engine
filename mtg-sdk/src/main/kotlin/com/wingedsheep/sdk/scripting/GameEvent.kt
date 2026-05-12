@@ -579,7 +579,10 @@ sealed interface GameEvent : TextReplaceable<GameEvent> {
         val player: Player = Player.You,
         /** When non-null, only triggers if the spell was cast from this zone
          *  (e.g., HAND for "Whenever you cast a spell from your hand"). */
-        val castFromZone: com.wingedsheep.sdk.core.Zone? = null
+        val castFromZone: com.wingedsheep.sdk.core.Zone? = null,
+        /** When non-null, only triggers if the spell was cast from any zone OTHER than this one
+         *  (e.g., Zone.HAND for "whenever you cast a spell from anywhere other than your hand"). */
+        val castFromZoneOtherThan: com.wingedsheep.sdk.core.Zone? = null
     ) : GameEvent {
         override val description: String = buildString {
             append(player.description)
@@ -599,6 +602,15 @@ sealed interface GameEvent : TextReplaceable<GameEvent> {
                     com.wingedsheep.sdk.core.Zone.GRAVEYARD -> "your graveyard"
                     com.wingedsheep.sdk.core.Zone.EXILE -> "exile"
                     else -> "your ${castFromZone.displayName.lowercase()}"
+                })
+            }
+            if (castFromZoneOtherThan != null) {
+                append(" from anywhere other than ")
+                append(when (castFromZoneOtherThan) {
+                    com.wingedsheep.sdk.core.Zone.HAND -> "your hand"
+                    com.wingedsheep.sdk.core.Zone.GRAVEYARD -> "your graveyard"
+                    com.wingedsheep.sdk.core.Zone.EXILE -> "exile"
+                    else -> "your ${castFromZoneOtherThan.displayName.lowercase()}"
                 })
             }
         }
