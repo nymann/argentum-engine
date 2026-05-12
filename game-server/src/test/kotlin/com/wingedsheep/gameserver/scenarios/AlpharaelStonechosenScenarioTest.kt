@@ -6,8 +6,10 @@ import com.wingedsheep.gameserver.ScenarioTestBase
 import com.wingedsheep.sdk.core.Keyword
 import com.wingedsheep.sdk.core.Phase
 import com.wingedsheep.sdk.core.Step
+import com.wingedsheep.sdk.core.Zone
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 
 class AlpharaelStonechosenScenarioTest : ScenarioTestBase() {
 
@@ -252,6 +254,117 @@ class AlpharaelStonechosenScenarioTest : ScenarioTestBase() {
                 withClue("Defending player should lose half their life rounded up") {
                     val expectedLoss = (opponentLifeBefore + 1) / 2
                     game.getLifeTotal(2) shouldBe opponentLifeBefore - expectedLoss
+                }
+            }
+
+            test("a token creature dying satisfies Void (rule 110.5: tokens are nonland permanents)") {
+                // The Void condition reads "a nonland permanent left the battlefield this turn"
+                // and per its DSL doc-comment explicitly counts tokens. Drive the token onto the
+                // battlefield via a real ETB trigger (Yavimaya Sapherd → 1/1 Saproling) so the
+                // permanent that dies actually has TokenComponent attached, then kill the
+                // Saproling with Shock.
+                val game = scenario()
+                    .withPlayers("ActivePlayer", "Opponent")
+                    .withCardOnBattlefield(1, "Alpharael, Stonechosen")
+                    .withCardInHand(1, "Yavimaya Sapherd") // {2}{G} — ETB makes a 1/1 Saproling token
+                    .withCardInHand(1, "Shock")
+                    .withLandsOnBattlefield(1, "Forest", 2)
+                    .withLandsOnBattlefield(1, "Swamp", 1)
+                    .withLandsOnBattlefield(1, "Mountain", 1)
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                // Cast Yavimaya Sapherd → ETB trigger creates the Saproling token
+                game.castSpell(1, "Yavimaya Sapherd")
+                game.resolveStack()
+
+                val saprolingId = game.findPermanent("Saproling")
+                    ?: game.findPermanent("Saproling Token")
+                withClue("Yavimaya Sapherd's ETB should put a Saproling token on the battlefield") {
+                    saprolingId shouldNotBe null
+                }
+
+                // Reset the "nonland permanent left the battlefield" flag by snapshotting
+                // before the kill — we want this test to assert specifically that the token's
+                // death satisfies Void. (Yavimaya Sapherd entering doesn't leave the
+                // battlefield, so the flag is still false here.)
+                withClue("No nonland permanent has left the battlefield yet") {
+                    game.state.nonlandPermanentLeftBattlefieldThisTurn shouldBe false
+                }
+
+                // Kill the Saproling token — Shock for 2 damage destroys the 1/1
+                game.castSpell(1, "Shock", saprolingId!!)
+                game.resolveStack()
+
+                withClue("Killing the Saproling token should flip the Void flag (tokens count as nonland permanents)") {
+                    game.state.nonlandPermanentLeftBattlefieldThisTurn shouldBe true
+                }
+
+                val opponentLifeBefore = game.getLifeTotal(2)
+
+                game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
+                game.declareAttackers(mapOf("Alpharael, Stonechosen" to 2))
+                game.resolveStack()
+
+                withClue("Void should trigger — defending player loses half their life rounded up") {
+                    val expectedLoss = (opponentLifeBefore + 1) / 2
+                    game.getLifeTotal(2) shouldBe opponentLifeBefore - expectedLoss
+                }
+            }
+
+            test("a land dying does NOT satisfy Void (only nonland permanents count)") {
+                // Mirror of the token-dies test: destroy a land instead of a nonland permanent.
+                // VoidCondition's doc-comment is explicit: "tokens count, lands do not".
+                val game = scenario()
+                    .withPlayers("ActivePlayer", "Opponent")
+                    .withCardOnBattlefield(1, "Alpharael, Stonechosen")
+                    .withCardInHand(1, "Lay Waste") // {3}{R} — Destroy target land
+                    .withLandsOnBattlefield(1, "Mountain", 4) // pay {3}{R}
+                    .withCardOnBattlefield(2, "Mountain") // opp's land — the Lay Waste target
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                // Target opponent's Mountain — destroy it
+                val opponentMountainId = game.state.getZone(game.player2Id, Zone.BATTLEFIELD)
+                    .first { entityId ->
+                        game.state.getEntity(entityId)?.let { c ->
+                            val card = c.get<com.wingedsheep.engine.state.components.identity.CardComponent>()
+                            card?.name == "Mountain"
+                        } == true
+                    }
+                val castResult = game.castSpell(1, "Lay Waste", opponentMountainId)
+                withClue("Lay Waste should cast: ${castResult.error}") {
+                    castResult.error shouldBe null
+                }
+                game.resolveStack()
+
+                withClue("Opponent's Mountain should be in their graveyard") {
+                    game.state.getZone(game.player2Id, Zone.GRAVEYARD).contains(opponentMountainId) shouldBe true
+                }
+
+                withClue("Killing a land must NOT flip the Void flag — only nonland permanents count") {
+                    game.state.nonlandPermanentLeftBattlefieldThisTurn shouldBe false
+                }
+
+                val opponentLifeBefore = game.getLifeTotal(2)
+
+                game.passUntilPhase(Phase.COMBAT, Step.DECLARE_ATTACKERS)
+                withClue("Alpharael should still be on the battlefield going into combat") {
+                    game.isOnBattlefield("Alpharael, Stonechosen") shouldBe true
+                }
+                val attackResult = game.declareAttackers(mapOf("Alpharael, Stonechosen" to 2))
+                withClue("Declare attackers should succeed: ${attackResult.error}") {
+                    attackResult.error shouldBe null
+                }
+                game.resolveStack()
+                // Drain through combat damage by passing priority to the end step
+                game.passUntilPhase(Phase.ENDING, Step.END)
+
+                withClue("Void should NOT trigger — defending player takes only combat damage (3)") {
+                    // Alpharael is 3/3, no Void → only the 3 combat damage from the attack.
+                    game.getLifeTotal(2) shouldBe opponentLifeBefore - 3
                 }
             }
         }
