@@ -48,6 +48,6 @@ val AgentVenom = card("Agent Venom") {
     }
 
     metadata {
-        rarity = Rarity.UNCOMMON
+        rarity = Rarity.RARE
     }
 }
