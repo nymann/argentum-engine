@@ -2,7 +2,7 @@
 
 **Set Size:** 188 booster cards (excluding basic lands and tokens)
 **Release Date:** September 26, 2025
-**Implemented:** 0 / 188
+**Implemented:** 1 / 188
 ---
 
 - [ ] Agent Venom
@@ -51,7 +51,7 @@
 - [ ] Hobgoblin, Mantled Marauder
 - [ ] Hot Dog Cart
 - [ ] Hydro-Man, Fluid Felon
-- [ ] Impostor Syndrome
+- [x] Impostor Syndrome
 - [ ] Inner Demons Gangsters
 - [ ] Interdimensional Web Watch
 - [ ] Iron Spider, Stark Upgrade
