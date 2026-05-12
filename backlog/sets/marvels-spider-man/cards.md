@@ -2,7 +2,7 @@
 
 **Set Size:** 188 booster cards (excluding basic lands and tokens)
 **Release Date:** September 26, 2025
-**Implemented:** 0 / 188
+**Implemented:** 1 / 188
 ---
 
 - [ ] Agent Venom
@@ -27,7 +27,7 @@
 - [ ] Costume Closet
 - [ ] Daily Bugle Building
 - [ ] Daily Bugle Reporters
-- [ ] Damage Control Crew
+- [x] Damage Control Crew
 - [ ] Doc Ock's Henchmen
 - [ ] Doc Ock's Tentacles
 - [ ] Doc Ock, Sinister Scientist
