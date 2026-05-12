@@ -20,7 +20,8 @@ data class SpellPaymentContext(
     val isCreature: Boolean = false,
     val manaValue: Int = 0,
     val hasXInCost: Boolean = false,
-    val subtypes: Set<String> = emptySet()
+    val subtypes: Set<String> = emptySet(),
+    val isFromExile: Boolean = false
 )
 
 /**
@@ -34,6 +35,7 @@ fun ManaRestriction.isSatisfiedBy(context: SpellPaymentContext): Boolean = when 
     is ManaRestriction.CreatureSpellsOnly -> context.isCreature
     is ManaRestriction.SubtypeSpellsOrAbilitiesOnly ->
         context.subtypes.any { it.equals(subtype, ignoreCase = true) }
+    is ManaRestriction.CastFromExileOnly -> context.isFromExile
 }
 
 @Serializable
