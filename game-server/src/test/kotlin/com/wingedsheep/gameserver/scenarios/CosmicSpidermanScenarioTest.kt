@@ -24,6 +24,66 @@ class CosmicSpidermanScenarioTest : ScenarioTestBase() {
     private val stateProjector = StateProjector()
 
     init {
+        context("Cosmic Spider-Man beginning-of-combat trigger") {
+
+            test("grants five keywords to other friendly Spiders only, not opponent's Spider") {
+                val game = scenario()
+                    .withPlayers("Active", "Opponent")
+                    .withCardOnBattlefield(1, "Cosmic Spider-Man")
+                    .withCardOnBattlefield(1, "Skyward Spider")   // friendly Spider — gains keywords
+                    .withCardOnBattlefield(2, "Skyward Spider")   // opponent's Spider — unaffected
+                    .withCardInLibrary(1, "Island")
+                    .withCardInLibrary(2, "Island")
+                    .withActivePlayer(1)
+                    .inPhase(Phase.PRECOMBAT_MAIN, Step.PRECOMBAT_MAIN)
+                    .build()
+
+                game.passUntilPhase(Phase.COMBAT, Step.BEGIN_COMBAT)
+                game.resolveStack()
+
+                val friendlySpiderId = game.state.getBattlefield(game.player1Id).find { entityId ->
+                    game.state.getEntity(entityId)?.get<CardComponent>()?.name == "Skyward Spider"
+                }!!
+                val opponentSpiderId = game.state.getBattlefield(game.player2Id).find { entityId ->
+                    game.state.getEntity(entityId)?.get<CardComponent>()?.name == "Skyward Spider"
+                }!!
+
+                val projected = stateProjector.project(game.state)
+
+                withClue("Friendly Spider should gain flying from trigger") {
+                    projected.hasKeyword(friendlySpiderId, Keyword.FLYING) shouldBe true
+                }
+                withClue("Friendly Spider should gain first strike from trigger") {
+                    projected.hasKeyword(friendlySpiderId, Keyword.FIRST_STRIKE) shouldBe true
+                }
+                withClue("Friendly Spider should gain trample from trigger") {
+                    projected.hasKeyword(friendlySpiderId, Keyword.TRAMPLE) shouldBe true
+                }
+                withClue("Friendly Spider should gain lifelink from trigger") {
+                    projected.hasKeyword(friendlySpiderId, Keyword.LIFELINK) shouldBe true
+                }
+                withClue("Friendly Spider should gain haste from trigger") {
+                    projected.hasKeyword(friendlySpiderId, Keyword.HASTE) shouldBe true
+                }
+
+                withClue("Opponent's Spider should not gain flying") {
+                    projected.hasKeyword(opponentSpiderId, Keyword.FLYING) shouldBe false
+                }
+                withClue("Opponent's Spider should not gain first strike") {
+                    projected.hasKeyword(opponentSpiderId, Keyword.FIRST_STRIKE) shouldBe false
+                }
+                withClue("Opponent's Spider should not gain trample") {
+                    projected.hasKeyword(opponentSpiderId, Keyword.TRAMPLE) shouldBe false
+                }
+                withClue("Opponent's Spider should not gain lifelink") {
+                    projected.hasKeyword(opponentSpiderId, Keyword.LIFELINK) shouldBe false
+                }
+                withClue("Opponent's Spider should not gain haste") {
+                    projected.hasKeyword(opponentSpiderId, Keyword.HASTE) shouldBe false
+                }
+            }
+        }
+
         context("Cosmic Spider-Man cast and resolve") {
 
             test("resolves onto battlefield as 5/5 Legendary Creature — Spider Human Hero with five static keywords") {
