@@ -52,7 +52,6 @@ class RiskyResearchScenarioTest : ScenarioTestBase() {
                 }
                 val surveilDecision = game.getPendingDecision()
                 surveilDecision.shouldBeInstanceOf<SelectCardsDecision>()
-                surveilDecision as SelectCardsDecision
                 withClue("Surveil 2 should offer exactly 2 cards") {
                     surveilDecision.options.size shouldBe 2
                 }
@@ -116,7 +115,6 @@ class RiskyResearchScenarioTest : ScenarioTestBase() {
                 }
                 val reorderDecision = game.getPendingDecision()
                 reorderDecision.shouldBeInstanceOf<ReorderLibraryDecision>()
-                reorderDecision as ReorderLibraryDecision
                 // Keep original order: Forest first (to be drawn first), Island second
                 game.submitDecision(OrderedResponse(reorderDecision.id, reorderDecision.cards))
 
